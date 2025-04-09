@@ -63,15 +63,11 @@ function loadGironi(callback) {
     const data = resp.getDataTable();
     gironiMap = {};
     for (let i = 0; i < data.getNumberOfRows(); i++) {
-      
       const squadra = data.getFormattedValue(i, 0);
       const g = data.getFormattedValue(i, 1);
-      if (squadra && g) {
+      if (squadra && g) {{
         gironiMap[squadra] = g;
-      } else {
-        
-      }
-
+      }}
     }
     callback();
   });

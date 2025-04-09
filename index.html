@@ -155,37 +155,5 @@
       }
     });
   </script>
-  function loadCSV(url) {
-  Papa.parse(url, {
-    download: true,
-    header: true,
-    complete: function(results) {
-      const data = results.data;
-
-      const matches = data.map(row => ({
-        giorno: row.GIORNO,
-        data: row.DATA,
-        ora: row.ORA,
-        campo: row.CAMPO,
-        girone: row.GIRONE,
-        squadra1: row.SQUADRA1,
-        squadra2: row.SQUADRA2,
-        risultato: row.RISULTATO
-      }));
-
-      // 🔽 ORDINA LE PARTITE PER DATA E ORA
-      matches.sort((a, b) => {
-        const dateA = new Date(`${a.data} ${a.ora}`);
-        const dateB = new Date(`${b.data} ${b.ora}`);
-        return dateA - dateB;
-      });
-
-      renderMatches(matches);
-      renderFilters(matches);
-      renderStandings(matches);
-    }
-  });
-}
-
 </body>
 </html>

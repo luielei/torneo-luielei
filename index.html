@@ -66,7 +66,7 @@ function loadGironi(callback) {
       const squadra = data.getFormattedValue(i, 0);
       const g = data.getFormattedValue(i, 1);
       if (squadra && g) {
-        gironiMap[squadra] = g;
+        gironiMap[squadra.trim().toLowerCase()] = g;
       }
     }
     callback();
@@ -123,7 +123,12 @@ function loadGironi(callback) {
         if (!p.risultato.includes("-")) return;
         const [g1, g2] = p.risultato.split("-").map(Number);
         const [s1, s2] = [p.squadra1, p.squadra2];
-        const girone = gironiMap[s1] === gironiMap[s2] ? gironiMap[s1] : "";
+        
+        const norm = s => s ? s.trim().toLowerCase() : "";
+        const g1 = gironiMap[norm(s1)];
+        const g2 = gironiMap[norm(s2)];
+        const girone = g1 && g1 === g2 ? g1 : "";
+
         if (!girone) return;
         if (!stats[girone]) stats[girone] = {};
         const update = (s, gf, gs, pt) => {

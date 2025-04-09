@@ -105,7 +105,7 @@
             campo: data.getFormattedValue(i, 3),
             squadra1: data.getFormattedValue(i, 6),
             squadra2: data.getFormattedValue(i, 7),
-            risultato: data.getFormattedValue(i, 8)
+            risultato: (data.getValue(i, 8) === null || data.getValue(i, 8) === undefined) ? "-" : data.getValue(i, 8).toString()
           });
         }
         renderProgramma(partite);

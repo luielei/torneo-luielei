@@ -97,14 +97,14 @@
         const data = response.getDataTable();
         const partite = [];
         for (let i = 0; i < data.getNumberOfRows(); i++) {
-          partite.push({
+          partite.push({ordine: new Date(data.getFormattedValue(i, 1) + " " + data.getFormattedValue(i, 2)),
             giorno: data.getFormattedValue(i, 0),
             data: data.getFormattedValue(i, 1),
             ora: data.getFormattedValue(i, 2),
             campo: data.getFormattedValue(i, 3),
             squadra1: data.getFormattedValue(i, 6),
             squadra2: data.getFormattedValue(i, 7),
-            risultato: data.getFormattedValue(i, 8)
+            r1: data.getFormattedValue(i, 8), r2: data.getFormattedValue(i, 9)
           });
         }
         renderProgramma(partite);
@@ -114,7 +114,7 @@
 
     function renderProgramma(partite) {
       let html = "<h2>Programma</h2><table><thead><tr><th>Giorno</th><th>Data</th><th>Ora</th><th>Campo</th><th>Squadra 1</th><th>Squadra 2</th><th>Risultato</th></tr></thead><tbody id='tabellaPartite'>";
-      partite.forEach(p => {
+      partite.sort((a, b) => a.ordine - b.ordine).forEach(p => {
         const girone = (gironiMap[p.squadra1] && gironiMap[p.squadra1] === gironiMap[p.squadra2]) ? gironiMap[p.squadra1] : "";
         html += `<tr data-giorno="${p.giorno}" data-campo="${p.campo}" data-girone="${girone}">
           <td>${p.giorno}</td><td>${p.data}</td><td>${p.ora}</td><td>${p.campo}</td><td>${p.squadra1}</td><td>${p.squadra2}</td><td>${p.risultato}</td></tr>`;
@@ -126,7 +126,7 @@
 
     function renderClassifiche(partite) {
       const stats = {};
-      partite.forEach(p => {
+      partite.sort((a, b) => a.ordine - b.ordine).forEach(p => {
         if (!p.risultato.includes("-")) return;
         const [g1, g2] = p.risultato.split("-").map(Number);
         const [s1, s2] = [p.squadra1, p.squadra2];

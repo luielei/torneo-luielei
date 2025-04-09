@@ -128,8 +128,8 @@
     function renderClassifiche(partite) {
       const stats = {};
       partite.forEach(p => {
-        if (!p.risultato.includes("-")) return;
-        const [g1, g2] = p.risultato.split("-").map(Number);
+        if (!/^\d+-\d+$/.test(p.risultato)) return;
+        const [g1, g2] = p.risultato.split("-").map(x => parseInt(x));
         const [s1, s2] = [p.squadra1, p.squadra2];
         const girone = gironiMap[s1] === gironiMap[s2] ? gironiMap[s1] : "";
         if (!girone) return;

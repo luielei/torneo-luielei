@@ -125,8 +125,8 @@ function loadGironi(callback) {
         const [s1, s2] = [p.squadra1, p.squadra2];
         
         const norm = s => s ? s.trim().toLowerCase() : "";
-        const g1 = gironiMap[norm(s1)];
-        const g2 = gironiMap[norm(s2)];
+        let g1 = gironiMap[norm(s1)];
+        let g2 = gironiMap[norm(s2)];
         const girone = g1 && g1 === g2 ? g1 : "";
 
         if (!girone) return;

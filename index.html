@@ -39,7 +39,7 @@
     <button onclick="loadLiveData()">🔄 Aggiorna</button>
   </div>
 
-  <div id="programma"></div>
+  <div id="programma"><p>⏳ Caricamento programma...</p></div>
   <div id="classifiche"></div>
 
   <script>
@@ -63,7 +63,15 @@ function loadGironi(callback) {
     const data = resp.getDataTable();
     gironiMap = {};
     for (let i = 0; i < data.getNumberOfRows(); i++) {
-      const squadra = data.getFormattedValue(i, 0);
+      
+    const squadra = data.getFormattedValue(i, 0);
+    const girone = data.getFormattedValue(i, 1);
+    if (squadra && girone) {
+      gironiMap[squadra] = girone;
+    } else {
+      console.warn("Gironi - Riga ignorata:", squadra, girone);
+    }
+
       const girone = data.getFormattedValue(i, 1);
       gironiMap[squadra] = girone;
     }

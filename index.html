@@ -97,14 +97,15 @@
         const data = response.getDataTable();
         const partite = [];
         for (let i = 0; i < data.getNumberOfRows(); i++) {
-          partite.push({ordine: new Date(data.getFormattedValue(i, 1) + " " + data.getFormattedValue(i, 2)),
+          partite.push({
+            ordine: new Date(data.getFormattedValue(i, 1) + " " + data.getFormattedValue(i, 2)),
             giorno: data.getFormattedValue(i, 0),
             data: data.getFormattedValue(i, 1),
             ora: data.getFormattedValue(i, 2),
             campo: data.getFormattedValue(i, 3),
             squadra1: data.getFormattedValue(i, 6),
             squadra2: data.getFormattedValue(i, 7),
-            r1: data.getValue(i, 8), r2: data.getValue(i, 9)
+            risultato: data.getFormattedValue(i, 8)
           });
         }
         renderProgramma(partite);
@@ -126,7 +127,7 @@
 
     function renderClassifiche(partite) {
       const stats = {};
-      partite.sort((a, b) => a.ordine - b.ordine).forEach(p => {
+      partite.forEach(p => {
         if (!p.risultato.includes("-")) return;
         const [g1, g2] = p.risultato.split("-").map(Number);
         const [s1, s2] = [p.squadra1, p.squadra2];

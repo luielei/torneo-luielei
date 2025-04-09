@@ -44,10 +44,36 @@
 
   <script>
     google.charts.load('current', { packages: ['table'] });
-    google.charts.setOnLoadCallback(loadLiveData);
+    
+google.charts.setOnLoadCallback(() => {
+  loadGironi(() => {
+    loadLiveData();
+  });
+});
+
+function loadGironi(callback) {
+  const gironiQuery = new google.visualization.Query(
+    'https://docs.google.com/spreadsheets/d/1j-Yp9vy-ZVMn1DvMLrt6Wf5N1rgoxQxsCHiqe8gNuuc/gviz/tq?sheet=Gironi'
+  );
+  gironiQuery.send(resp => {
+    if (resp.isError()) {
+      alert("Errore caricamento gironi: " + resp.getMessage());
+      return;
+    }
+    const data = resp.getDataTable();
+    gironiMap = {};
+    for (let i = 0; i < data.getNumberOfRows(); i++) {
+      const squadra = data.getFormattedValue(i, 0);
+      const girone = data.getFormattedValue(i, 1);
+      gironiMap[squadra] = girone;
+    }
+    callback();
+  });
+}
+
     setInterval(loadLiveData, 60000);
 
-    const gironiMap = {
+    let gironiMap = {};
       "LEGOLASSO": "A",
     "I MEDIOCRI": "A",
     "RISTORANTE LA ROCCA": "A",
@@ -105,7 +131,7 @@
             campo: data.getFormattedValue(i, 3),
             squadra1: data.getFormattedValue(i, 6),
             squadra2: data.getFormattedValue(i, 7),
-            risultato: (data.getValue(i, 8) === null || data.getValue(i, 8) === undefined) ? "-" : data.getValue(i, 8).toString()
+            risultato: data.getFormattedValue(i, 8)
           });
         }
         renderProgramma(partite);
@@ -128,8 +154,8 @@
     function renderClassifiche(partite) {
       const stats = {};
       partite.forEach(p => {
-        if (!/^\d+-\d+$/.test(p.risultato)) return;
-        const [g1, g2] = p.risultato.split("-").map(x => parseInt(x));
+        if (!p.risultato.includes("-")) return;
+        const [g1, g2] = p.risultato.split("-").map(Number);
         const [s1, s2] = [p.squadra1, p.squadra2];
         const girone = gironiMap[s1] === gironiMap[s2] ? gironiMap[s1] : "";
         if (!girone) return;

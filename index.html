@@ -3,36 +3,95 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <title>Programma Torneo LUI&LEI - LIVE</title>
+  <title>Programma & Classifiche - LIVE</title>
   <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 40px; background-color: #f5f5f5; }
+    body { font-family: Arial, sans-serif; margin: 40px; background-color: #f9f9f9; }
     h1, h2 { color: #2c3e50; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
     th { background-color: #34495e; color: white; }
     tr:nth-child(even) { background-color: #f2f2f2; }
-    button { margin-bottom: 20px; padding: 10px 20px; font-size: 16px; }
+    .filtri { text-align: center; margin-bottom: 20px; }
+    select, button { padding: 8px 12px; margin: 0 8px; }
   </style>
 </head>
 <body>
-  <h1>Programma e Classifiche Live - Torneo LUI&LEI</h1>
-  <div style="text-align:center;">
-    <button onclick="loadLiveData()">🔄 Aggiorna risultati</button>
+  <h1>Programma e Classifiche - Torneo LUI&LEI</h1>
+  <div class="filtri">
+    <label for="filtroGiorno">Giorno:</label>
+    <select id="filtroGiorno" onchange="filtra()">
+      <option value="">Tutti</option>
+      <option value="SABATO">Sabato</option>
+      <option value="DOMENICA">Domenica</option>
+    </select>
+    <label for="filtroCampo">Campo:</label>
+    <select id="filtroCampo" onchange="filtra()">
+      <option value="">Tutti</option>
+      <option value="A">Campo A</option>
+      <option value="B">Campo B</option>
+    </select>
+    <label for="filtroGirone">Girone:</label>
+    <select id="filtroGirone" onchange="filtra()">
+      <option value="">Tutti</option>
+      <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option><option value="F">F</option><option value="G">G</option>
+    </select>
+    <button onclick="loadLiveData()">🔄 Aggiorna</button>
   </div>
+
   <div id="programma"></div>
   <div id="classifiche"></div>
 
   <script>
     google.charts.load('current', { packages: ['table'] });
     google.charts.setOnLoadCallback(loadLiveData);
-    setInterval(loadLiveData, 60000); // aggiornamento ogni 60 sec
+    setInterval(loadLiveData, 60000);
+
+    const gironiMap = {
+      "LEGOLASSO": "A",
+    "I MEDIOCRI": "A",
+    "RISTORANTE LA ROCCA": "A",
+    "BIANCANEVE E I 7 CM": "A",
+    "LA CARICA DEI 104": "A",
+    "WELCOME ALCOHOLICS": "B",
+    "FRUNI UNITED": "B",
+    "BIRRA E CORI": "B",
+    "POLLINATOR'S": "B",
+    "MS": "B",
+    "FC TINGENIA": "C",
+    "CO-CO COGUARI": "C",
+    "I RE CO-LIONS": "C",
+    "STIRATEAM": "C",
+    "MUNAY": "C",
+    "ESPRESSGOL MACCHIATO": "D",
+    "I MISSILI": "D",
+    "AURORA BIRREALE": "D",
+    "TEAM NOCINO": "D",
+    "LA SOLEGGIATA": "D",
+    "I DISTINTI": "E",
+    "TRONA-TI": "E",
+    "TEAM OLESTO": "E",
+    "RED DEVILS GENEROUS": "E",
+    "PANTERONE": "E",
+    "ATLETICO BIRRAO": "F",
+    "TEMPTATION BARLAND": "F",
+    "HERTA VERNELLO": "F",
+    "RAPID MIATANT": "F",
+    "REAL MAI-DRIT": "F",
+    "MANCHESTER FICHI": "G",
+    "FUNKY MONKEY": "G",
+    "GLI IRRIDUCIBILI": "G",
+    "ABCF ASTON BIRRA": "G",
+    "TI CHE TE TACHET I TAC": "G"
+    };
 
     function loadLiveData() {
-      const query = new google.visualization.Query('https://docs.google.com/spreadsheets/d/1j-Yp9vy-ZVMn1DvMLrt6Wf5N1rgoxQxsCHiqe8gNuuc/gviz/tq?sheet=Programma');
+      const query = new google.visualization.Query(
+        'https://docs.google.com/spreadsheets/d/1j-Yp9vy-ZVMn1DvMLrt6Wf5N1rgoxQxsCHiqe8gNuuc/gviz/tq?sheet=Programma'
+      );
       query.send(response => {
         if (response.isError()) {
-          document.getElementById("programma").innerHTML = "<p style='color:red;'>Errore nel caricamento dati: " + response.getMessage() + "</p>";
+          document.getElementById("programma").innerHTML = "<p style='color:red;'>Errore: " + response.getMessage() + "</p>";
           return;
         }
         const data = response.getDataTable();
@@ -49,16 +108,76 @@
           });
         }
         renderProgramma(partite);
+        renderClassifiche(partite);
       });
     }
 
     function renderProgramma(partite) {
-      let html = "<h2>Programma</h2><table><thead><tr><th>Giorno</th><th>Data</th><th>Ora</th><th>Campo</th><th>Squadra 1</th><th>Squadra 2</th><th>Risultato</th></tr></thead><tbody>";
+      let html = "<h2>Programma</h2><table><thead><tr><th>Giorno</th><th>Data</th><th>Ora</th><th>Campo</th><th>Squadra 1</th><th>Squadra 2</th><th>Risultato</th></tr></thead><tbody id='tabellaPartite'>";
       partite.forEach(p => {
-        html += `<tr><td>${p.giorno}</td><td>${p.data}</td><td>${p.ora}</td><td>${p.campo}</td><td>${p.squadra1}</td><td>${p.squadra2}</td><td>${p.risultato}</td></tr>`;
+        const girone = (gironiMap[p.squadra1] && gironiMap[p.squadra1] === gironiMap[p.squadra2]) ? gironiMap[p.squadra1] : "";
+        html += `<tr data-giorno="${p.giorno}" data-campo="${p.campo}" data-girone="${girone}">
+          <td>${p.giorno}</td><td>${p.data}</td><td>${p.ora}</td><td>${p.campo}</td><td>${p.squadra1}</td><td>${p.squadra2}</td><td>${p.risultato}</td></tr>`;
       });
       html += "</tbody></table>";
       document.getElementById("programma").innerHTML = html;
+      filtra();
+    }
+
+    function renderClassifiche(partite) {
+      const stats = {};
+      partite.forEach(p => {
+        if (!p.risultato.includes("-")) return;
+        const [g1, g2] = p.risultato.split("-").map(Number);
+        const [s1, s2] = [p.squadra1, p.squadra2];
+        const girone = gironiMap[s1] === gironiMap[s2] ? gironiMap[s1] : "";
+        if (!girone) return;
+        if (!stats[girone]) stats[girone] = {};
+        const update = (s, gf, gs, pt) => {
+          if (!stats[girone][s]) stats[girone][s] = {PG:0,V:0,N:0,P:0,GF:0,GS:0,PT:0};
+          const t = stats[girone][s];
+          t.PG++; t.GF += gf; t.GS += gs; t.PT += pt;
+          if (pt === 3) t.V++; else if (pt === 1) t.N++; else t.P++;
+        };
+        const pt1 = g1 > g2 ? 3 : g1 < g2 ? 0 : 1;
+        const pt2 = g2 > g1 ? 3 : g2 < g1 ? 0 : 1;
+        update(s1, g1, g2, pt1);
+        update(s2, g2, g1, pt2);
+      });
+
+      let html = "";
+      Object.entries(stats).forEach(([girone, squadre]) => {
+        html += `<div class='classifica' data-girone="${girone}"><h2>Classifica Girone ${girone}</h2>
+        <table><thead><tr><th>Squadra</th><th>PG</th><th>V</th><th>N</th><th>P</th><th>GF</th><th>GS</th><th>PT</th></tr></thead><tbody>`;
+        Object.entries(squadre)
+          .sort(([,a],[,b]) => b.PT-a.PT || (b.GF-b.GS)-(a.GF-a.GS) || b.GF-a.GF)
+          .forEach(([s,c]) => {
+            html += `<tr><td>${s}</td><td>${c.PG}</td><td>${c.V}</td><td>${c.N}</td><td>${c.P}</td><td>${c.GF}</td><td>${c.GS}</td><td>${c.PT}</td></tr>`;
+          });
+        html += "</tbody></table></div>";
+      });
+      document.getElementById("classifiche").innerHTML = html;
+      filtra();
+    }
+
+    function filtra() {
+      const giorno = document.getElementById("filtroGiorno").value;
+      const campo = document.getElementById("filtroCampo").value;
+      const girone = document.getElementById("filtroGirone").value;
+
+      const righe = document.querySelectorAll("#tabellaPartite tr");
+      righe.forEach(r => {
+        const g = r.getAttribute("data-giorno");
+        const c = r.getAttribute("data-campo");
+        const gr = r.getAttribute("data-girone");
+        r.style.display = (!giorno || g === giorno) &&
+                          (!campo || c === campo) &&
+                          (!girone || gr === girone) ? "" : "none";
+      });
+
+      document.querySelectorAll(".classifica").forEach(d => {
+        d.style.display = (!girone || d.getAttribute("data-girone") === girone) ? "" : "none";
+      });
     }
   </script>
 </body>

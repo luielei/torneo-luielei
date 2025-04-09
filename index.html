@@ -1,31 +1,41 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8" />
-  <title>Programma Torneo LUI&LEI</title>
+  <meta charset="UTF-8">
+  <title>Programma LUI&LEI</title>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
-    body { font-family: sans-serif; padding: 20px; background: #f9f9f9; }
-    select { margin: 5px; }
-    table { border-collapse: collapse; width: 100%; margin: 20px 0; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-    th { background-color: #eee; }
+    body { font-family: sans-serif; padding: 20px; }
+    select, table { margin: 10px 0; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
+    th { background-color: #f0f0f0; }
+    .hidden { display: none; }
   </style>
 </head>
 <body>
-  <h1>Programma Torneo LUI&LEI</h1>
+  <h1>Programma LUI&LEI</h1>
 
-  <div>
-    <label>Campo: <select id="filtroCampo"><option value="">Tutti</option></select></label>
-    <label>Giorno: <select id="filtroGiorno"><option value="">Tutti</option></select></label>
-    <label>Girone: <select id="filtroGirone"><option value="">Tutti</option></select></label>
-  </div>
+  <label for="campoFilter">Filtro Campo:</label>
+  <select id="campoFilter"></select>
 
-  <h2>Programma Partite</h2>
-  <table id="programma">
+  <label for="giornoFilter">Filtro Giorno:</label>
+  <select id="giornoFilter"></select>
+
+  <label for="gironeFilter">Filtro Girone:</label>
+  <select id="gironeFilter"></select>
+
+  <h2>Partite</h2>
+  <table id="programmaTable">
     <thead>
       <tr>
-        <th>Giorno</th><th>Ora</th><th>Campo</th><th>Girone</th><th>Squadra A</th><th>Risultato</th><th>Squadra B</th>
+        <th>Data</th>
+        <th>Ora</th>
+        <th>Campo</th>
+        <th>Squadra A</th>
+        <th>Risultato</th>
+        <th>Squadra B</th>
+        <th>Girone</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -35,109 +45,128 @@
   <div id="classifiche"></div>
 
   <script>
-    const URL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=1898554956&single=true&output=csv";
-    let datiPartite = [];
+    const url = "https://gsx2json.com/api?id=1j-Yp9vy-ZVMn1DvMLrt6Wf5N1rgoxQxsCHiqe8gNuuc&sheet=Programma";
 
-    Papa.parse(URL_CSV, {
-      download: true,
-      header: true,
-      complete: function(results) {
-        datiPartite = results.data.filter(p => p['SQUADRA A']); // rimuove righe vuote
-        popolaFiltri();
-        mostraProgramma();
-        mostraClassifiche();
-      }
-    });
+    let partite = [];
 
-    function popolaFiltri() {
+    fetch(url)
+      .then(res => res.json())
+      .then(json => {
+        partite = json.rows.map(r => ({
+          data: r["DATA"],
+          ora: r["ORA"],
+          campo: r["CAMPO"],
+          squadraA: r["SQUADRA A"],
+          squadraB: r["SQUADRA B"],
+          golA: parseInt(r["GOL A"] || 0),
+          golB: parseInt(r["GOL B"] || 0),
+          girone: r["GIRONE"]
+        })).filter(r => r.data && r.ora);
+
+        populateFilters();
+        updateTable();
+        updateClassifiche();
+      });
+
+    function populateFilters() {
       const campoSet = new Set(), giornoSet = new Set(), gironeSet = new Set();
-      datiPartite.forEach(p => {
-        campoSet.add(p.CAMPO);
-        giornoSet.add(p.GIORNO);
-        gironeSet.add(p.GIRONE);
+      partite.forEach(p => {
+        campoSet.add(p.campo);
+        giornoSet.add(p.data);
+        gironeSet.add(p.girone);
       });
-
-      campoSet.forEach(c => addOption("filtroCampo", c));
-      giornoSet.forEach(g => addOption("filtroGiorno", g));
-      gironeSet.forEach(g => addOption("filtroGirone", g));
-
-      document.getElementById("filtroCampo").onchange = mostraProgramma;
-      document.getElementById("filtroGiorno").onchange = mostraProgramma;
-      document.getElementById("filtroGirone").onchange = mostraProgramma;
+      fillSelect("campoFilter", campoSet);
+      fillSelect("giornoFilter", giornoSet);
+      fillSelect("gironeFilter", gironeSet);
+      document.querySelectorAll('select').forEach(sel => sel.addEventListener('change', () => {
+        updateTable();
+        updateClassifiche();
+      }));
     }
 
-    function addOption(id, val) {
-      const opt = document.createElement("option");
-      opt.value = opt.text = val;
-      document.getElementById(id).appendChild(opt);
+    function fillSelect(id, values) {
+      const select = document.getElementById(id);
+      select.innerHTML = '<option value="">Tutti</option>';
+      Array.from(values).sort().forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v;
+        opt.textContent = v;
+        select.appendChild(opt);
+      });
     }
 
-    function mostraProgramma() {
-      const campo = document.getElementById("filtroCampo").value;
-      const giorno = document.getElementById("filtroGiorno").value;
-      const girone = document.getElementById("filtroGirone").value;
-
-      const partiteFiltrate = datiPartite.filter(p =>
-        (!campo || p.CAMPO === campo) &&
-        (!giorno || p.GIORNO === giorno) &&
-        (!girone || p.GIRONE === girone)
-      );
-
-      partiteFiltrate.sort((a, b) => {
-        const d1 = new Date(`${a.GIORNO} ${a.ORA}`);
-        const d2 = new Date(`${b.GIORNO} ${b.ORA}`);
-        return d1 - d2;
-      });
-
-      const tbody = document.querySelector("#programma tbody");
+    function updateTable() {
+      const campo = campoFilter.value;
+      const giorno = giornoFilter.value;
+      const girone = gironeFilter.value;
+      const tbody = document.querySelector("#programmaTable tbody");
       tbody.innerHTML = "";
-      partiteFiltrate.forEach(p => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${p.GIORNO}</td><td>${p.ORA}</td><td>${p.CAMPO}</td><td>${p.GIRONE}</td>
-                        <td>${p["SQUADRA A"]}</td><td>${p.RISULTATO}</td><td>${p["SQUADRA B"]}</td>`;
-        tbody.appendChild(tr);
-      });
+
+      partite
+        .filter(p => (!campo || p.campo === campo) && (!giorno || p.data === giorno) && (!girone || p.girone === girone))
+        .sort((a, b) => (a.data + a.ora).localeCompare(b.data + b.ora))
+        .forEach(p => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${p.data}</td>
+            <td>${p.ora}</td>
+            <td>${p.campo}</td>
+            <td>${p.squadraA}</td>
+            <td>${p.golA}-${p.golB}</td>
+            <td>${p.squadraB}</td>
+            <td>${p.girone}</td>`;
+          tbody.appendChild(tr);
+        });
     }
 
-    function mostraClassifiche() {
-      const gironi = [...new Set(datiPartite.map(p => p.GIRONE))];
+    function updateClassifiche() {
+      const gironeSel = gironeFilter.value;
       const container = document.getElementById("classifiche");
       container.innerHTML = "";
 
+      const gironi = gironeSel ? [gironeSel] : [...new Set(partite.map(p => p.girone))];
+
       gironi.forEach(girone => {
-        const squadre = {};
-        datiPartite.filter(p => p.GIRONE === girone && p.RISULTATO.includes("-")).forEach(p => {
-          const [g1, g2] = p.RISULTATO.split("-").map(n => parseInt(n.trim()));
-          const sa = p["SQUADRA A"];
-          const sb = p["SQUADRA B"];
-          if (!squadre[sa]) squadre[sa] = { squadra: sa, punti: 0, giocate: 0, gf: 0, gs: 0 };
-          if (!squadre[sb]) squadre[sb] = { squadra: sb, punti: 0, giocate: 0, gf: 0, gs: 0 };
-
-          squadre[sa].gf += g1; squadre[sa].gs += g2; squadre[sa].giocate++;
-          squadre[sb].gf += g2; squadre[sb].gs += g1; squadre[sb].giocate++;
-
-          if (g1 > g2) squadre[sa].punti += 3;
-          else if (g2 > g1) squadre[sb].punti += 3;
-          else { squadre[sa].punti += 1; squadre[sb].punti += 1; }
+        const classifica = {};
+        partite.filter(p => p.girone === girone && !isNaN(p.golA) && !isNaN(p.golB)).forEach(p => {
+          [p.squadraA, p.squadraB].forEach(sq => {
+            if (!classifica[sq]) classifica[sq] = { giocate: 0, punti: 0, fatti: 0, subiti: 0 };
+          });
+          classifica[p.squadraA].giocate++;
+          classifica[p.squadraB].giocate++;
+          classifica[p.squadraA].fatti += p.golA;
+          classifica[p.squadraA].subiti += p.golB;
+          classifica[p.squadraB].fatti += p.golB;
+          classifica[p.squadraB].subiti += p.golA;
+          if (p.golA > p.golB) classifica[p.squadraA].punti += 3;
+          else if (p.golB > p.golA) classifica[p.squadraB].punti += 3;
+          else { classifica[p.squadraA].punti += 1; classifica[p.squadraB].punti += 1; }
         });
 
-        const classifica = Object.values(squadre);
-        classifica.sort((a, b) =>
-          b.punti - a.punti || (b.gf - b.gs) - (a.gf - a.gs) || b.gf - a.gf
-        );
+        const entries = Object.entries(classifica).map(([squadra, stats]) => ({ squadra, ...stats }));
+        entries.sort((a, b) => b.punti - a.punti || (b.fatti - b.subiti) - (a.fatti - a.subiti));
 
-        const div = document.createElement("div");
-        div.innerHTML = `<h3>Girone ${girone}</h3>
+        const html = `
+          <h3>Girone ${girone}</h3>
           <table>
-            <thead><tr><th>Squadra</th><th>Pt</th><th>G</th><th>GF</th><th>GS</th><th>Diff</th></tr></thead>
+            <thead>
+              <tr><th>Squadra</th><th>Giocate</th><th>Punti</th><th>Gol Fatti</th><th>Gol Subiti</th><th>Diff</th></tr>
+            </thead>
             <tbody>
-              ${classifica.map(s => `<tr>
-                <td>${s.squadra}</td><td>${s.punti}</td><td>${s.giocate}</td>
-                <td>${s.gf}</td><td>${s.gs}</td><td>${s.gf - s.gs}</td>
-              </tr>`).join("")}
+              ${entries.map(e => `
+                <tr>
+                  <td>${e.squadra}</td>
+                  <td>${e.giocate}</td>
+                  <td>${e.punti}</td>
+                  <td>${e.fatti}</td>
+                  <td>${e.subiti}</td>
+                  <td>${e.fatti - e.subiti}</td>
+                </tr>
+              `).join('')}
             </tbody>
-          </table>`;
-        container.appendChild(div);
+          </table>
+        `;
+        container.innerHTML += html;
       });
     }
   </script>

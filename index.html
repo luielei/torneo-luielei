@@ -64,16 +64,14 @@ function loadGironi(callback) {
     gironiMap = {};
     for (let i = 0; i < data.getNumberOfRows(); i++) {
       
-    const squadra = data.getFormattedValue(i, 0);
-    const girone = data.getFormattedValue(i, 1);
-    if (squadra && girone) {
-      gironiMap[squadra] = girone;
-    } else {
-      console.warn("Gironi - Riga ignorata:", squadra, girone);
-    }
+      const squadra = data.getFormattedValue(i, 0);
+      const g = data.getFormattedValue(i, 1);
+      if (squadra && g) {
+        gironiMap[squadra] = g;
+      } else {
+        console.warn("Gironi - Riga ignorata:", squadra, g);
+      }
 
-      const girone = data.getFormattedValue(i, 1);
-      gironiMap[squadra] = girone;
     }
     callback();
   });

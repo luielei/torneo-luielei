@@ -124,12 +124,15 @@ function loadGironi(callback) {
         const [g1, g2] = p.risultato.split("-").map(Number);
         const [s1, s2] = [p.squadra1, p.squadra2];
         
+let girone = "";
 function normalizza(s) {
   return s ? s.trim().toLowerCase() : "";
 }
-const g1 = gironiMap[normalizza(s1)];
-const g2 = gironiMap[normalizza(s2)];
-let girone = (g1 && g1 === g2) ? g1 : "";
+let gs1 = gironiMap[normalizza(s1)];
+let gs2 = gironiMap[normalizza(s2)];
+if (gs1 && gs2 && gs1 === gs2) {
+  girone = gs1;
+}
 
         if (!girone) return;
         if (!stats[girone]) stats[girone] = {};

@@ -66,7 +66,11 @@ function loadGironi(callback) {
       const squadra = data.getFormattedValue(i, 0);
       const g = data.getFormattedValue(i, 1);
       if (squadra && g) {
-        gironiMap[squadra.trim().toLowerCase()] = g;
+        
+    const normName = squadra.trim().toLowerCase();
+    gironiMap[normName] = g;
+    console.log("Girone caricato:", normName, "->", g);
+
       }
     }
     callback();
@@ -130,9 +134,14 @@ function normalizza(s) {
 }
 let gs1 = gironiMap[normalizza(s1)];
 let gs2 = gironiMap[normalizza(s2)];
+
 if (gs1 && gs2 && gs1 === gs2) {
   girone = gs1;
+  console.log("Partita:", s1, "vs", s2, "→ Girone:", girone);
+} else {
+  console.warn("⚠️ Girone non riconosciuto per:", s1, "vs", s2, "→", gs1, gs2);
 }
+
 
         if (!girone) return;
         if (!stats[girone]) stats[girone] = {};

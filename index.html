@@ -3,398 +3,63 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <title>Programma Torneo LUI&LEI - Filtri</title>
+  <title>Programma Torneo LUI&LEI - LIVE</title>
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; background: #f9f9f9; padding: 40px; }
-    table { border-collapse: collapse; width: 100%; background: white; }
-    th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
-    th { background-color: #2c3e50; color: white; }
+    body { font-family: Arial, sans-serif; margin: 40px; background-color: #f5f5f5; }
+    h1, h2 { color: #2c3e50; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background-color: #34495e; color: white; }
     tr:nth-child(even) { background-color: #f2f2f2; }
-    h1 { text-align: center; color: #2c3e50; }
-    .filtri { margin-bottom: 20px; text-align: center; }
-    select { padding: 6px 10px; margin: 0 10px; }
+    button { margin-bottom: 20px; padding: 10px 20px; font-size: 16px; }
   </style>
-
-<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-<script>
-  google.charts.load('current', {'packages':['corechart', 'table']});
-  google.charts.setOnLoadCallback(loadLiveData);
-
-  function loadLiveData() {
-    const query = new google.visualization.Query(
-      'https://docs.google.com/spreadsheets/d/1KTvIpCmGaf0NP_JX9JtbSvhtA8N5HppAWHbeaP-IOGo/gviz/tq?sheet=Programma'
-    );
-    query.send(handleSheetResponse);
-  }
-
-  function handleSheetResponse(response) {
-    if (response.isError()) {
-      alert('Errore nel caricamento dati dal foglio Google: ' + response.getMessage());
-      return;
-    }
-
-    const data = response.getDataTable();
-    const righe = [];
-    for (let i = 0; i < data.getNumberOfRows(); i++) {
-      righe.push({
-        giorno: data.getFormattedValue(i, 0),
-        data: data.getFormattedValue(i, 1),
-        ora: data.getFormattedValue(i, 2),
-        campo: data.getFormattedValue(i, 3),
-        squadra1: data.getFormattedValue(i, 4),
-        squadra2: data.getFormattedValue(i, 5),
-        risultato: data.getFormattedValue(i, 6)
-      });
-    }
-
-    aggiornaProgramma(righe);
-    aggiornaClassifiche(righe);
-  }
-
-  function aggiornaProgramma(partite) {
-    const tbody = document.querySelector("#tabellaPartite");
-    tbody.innerHTML = "";
-    partite.forEach(p => {
-      const tr = document.createElement("tr");
-      tr.setAttribute("data-giorno", p.giorno);
-      tr.setAttribute("data-campo", p.campo);
-      tr.setAttribute("data-girone", trovaGirone(p.squadra1, p.squadra2));
-
-      tr.innerHTML = `
-        <td>${p.giorno}</td>
-        <td>${p.data}</td>
-        <td>${p.ora}</td>
-        <td>${p.campo}</td>
-        <td>${p.squadra1}</td>
-        <td>${p.squadra2}</td>
-        <td>${p.risultato}</td>`;
-      tbody.appendChild(tr);
-    });
-    filtra();  // per rispettare i filtri attivi
-  }
-
-  const gironiMap = {
-    "LEGOLASSO": "A", "I MEDIOCRI": "A", "RISTORANTE LA ROCCA": "A", "BIANCANEVE E I 7 CM": "A", "LA CARICA DEI 104": "A", "WELCOME ALCOHOLICS": "B", "FRUNI UNITED": "B", "BIRRA E CORI": "B", "POLLINATOR'S": "B", "MS": "B", "FC TINGENIA": "C", "CO-CO COGUARI": "C", "I RE CO-LIONS": "C", "STIRATEAM": "C", "MUNAY": "C", "ESPRESSGOL MACCHIATO": "D", "I MISSILI": "D", "AURORA BIRREALE": "D", "TEAM NOCINO": "D", "LA SOLEGGIATA": "D", "I DISTINTI": "E", "TRONA-TI": "E", "TEAM OLESTO": "E", "RED DEVILS GENEROUS": "E", "PANTERONE": "E", "ATLETICO BIRRAO": "F", "TEMPTATION BARLAND": "F", "HERTA VERNELLO": "F", "RAPID MIATANT": "F", "REAL MAI-DRIT": "F", "MANCHESTER FICHI": "G", "FUNKY MONKEY": "G", "GLI IRRIDUCIBILI": "G", "ABCF ASTON BIRRA": "G", "TI CHE TE TACHET I TAC": "G"
-  };
-
-  function trovaGirone(s1, s2) {
-    return (gironiMap[s1] && gironiMap[s1] === gironiMap[s2]) ? gironiMap[s1] : "";
-  }
-
-  function aggiornaClassifiche(partite) {
-    const classifica = {};
-    partite.forEach(p => {
-      if (!p.risultato || !p.risultato.includes("-")) return;
-      const [g1, g2] = p.risultato.split("-").map(x => parseInt(x));
-      const [s1, s2] = [p.squadra1, p.squadra2];
-      const aggiorna = (s, gf, gs, pt) => {
-        const g = gironiMap[s] || "";
-        if (!classifica[g]) classifica[g] = {};
-        if (!classifica[g][s]) classifica[g][s] = {PG: 0, V: 0, N: 0, P: 0, GF: 0, GS: 0, PT: 0};
-        let c = classifica[g][s];
-        c.PG++; c.GF += gf; c.GS += gs; c.PT += pt;
-        if (pt === 3) c.V++; else if (pt === 1) c.N++; else c.P++;
-      };
-      const pt1 = g1 > g2 ? 3 : g1 < g2 ? 0 : 1;
-      const pt2 = g2 > g1 ? 3 : g2 < g1 ? 0 : 1;
-      aggiorna(s1, g1, g2, pt1);
-      aggiorna(s2, g2, g1, pt2);
-    });
-
-    document.getElementById("classifiche").innerHTML = "";
-    Object.entries(classifica).forEach(([girone, squadre]) => {
-      const container = document.createElement("div");
-      container.className = "classifica";
-      container.setAttribute("data-girone", girone);
-      let html = `<h2>Classifica Girone $G</h2>
-      
-<div style="text-align:center; margin-bottom: 20px;">
-  <button onclick="aggiornaManuale()" style="padding: 10px 20px; font-size: 16px;">🔄 Aggiorna risultati</button>
-</div>
-<table><thead><tr><th>Squadra</th><th>PG</th><th>V</th><th>N</th><th>P</th><th>GF</th><th>GS</th><th>PT</th></tr></thead><tbody>`;
-
-      Object.entries(squadre)
-        .sort(([, a], [, b]) => b.PT - a.PT || (b.GF - b.GS) - (a.GF - a.GS) || b.GF - a.GF)
-        .forEach(([s, c]) => {
-          html += `<tr><td>${s}</td><td>${c.PG}</td><td>${c.V}</td><td>${c.N}</td><td>${c.P}</td><td>${c.GF}</td><td>${c.GS}</td><td>${c.PT}</td></tr>`;
-        });
-      html += "</tbody></table>";
-      container.innerHTML = html;
-      document.getElementById("classifiche").appendChild(container);
-    });
-    filtra();  // aggiorna visibilità in base al filtro girone
-  }
-</script>
-
 </head>
 <body>
-  <h1>Programma Torneo - Filtra Partite</h1>
-
-  <div class="filtri">
-    <label for="filtroGiorno">Giorno:</label>
-    <select id="filtroGiorno" onchange="filtra()">
-      <option value="">Tutti</option>
-      <option value="SABATO">Sabato</option>
-      <option value="DOMENICA">Domenica</option>
-    </select>
-
-    <label for="filtroCampo">Campo:</label>
-    <select id="filtroCampo" onchange="filtra()">
-      <option value="">Tutti</option>
-      <option value="A">Campo A</option>
-      <option value="B">Campo B</option>
-    </select>
-
-    <label for="filtroGirone">Girone:</label>
-    <select id="filtroGirone" onchange="filtra()">
-      <option value="">Tutti</option>
-      <option value='A'>A</option><option value='B'>B</option><option value='C'>C</option><option value='D'>D</option><option value='E'>E</option><option value='F'>F</option><option value='G'>G</option>
-    </select>
+  <h1>Programma e Classifiche Live - Torneo LUI&LEI</h1>
+  <div style="text-align:center;">
+    <button onclick="loadLiveData()">🔄 Aggiorna risultati</button>
   </div>
-
-  
-<div style="text-align:center; margin-bottom: 20px;">
-  <button onclick="aggiornaManuale()" style="padding: 10px 20px; font-size: 16px;">🔄 Aggiorna risultati</button>
-</div>
-<table>
-    <thead>
-      <tr>
-        <th>Giorno</th><th>Data</th><th>Ora</th><th>Campo</th><th>Squadra 1</th><th>Squadra 2</th><th>Risultato</th>
-      </tr>
-    </thead>
-    <tbody id="tabellaPartite">
-      <tr data-giorno='SABATO' data-campo='A' data-girone='A'><td>SABATO</td><td>2025-04-19</td><td>14:00</td><td>A</td><td>LEGOLASSO</td><td>I MEDIOCRI</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='B' data-girone='B'><td>SABATO</td><td>2025-04-19</td><td>14:00</td><td>B</td><td>WELCOME ALCOHOLICS</td><td>FRUNI UNITED</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='A' data-girone='C'><td>SABATO</td><td>2025-04-19</td><td>14:20</td><td>A</td><td>FC TINGENIA</td><td>CO-CO COGUARI</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='B' data-girone='D'><td>SABATO</td><td>2025-04-19</td><td>14:20</td><td>B</td><td>ESPRESSGOL MACCHIATO</td><td>I MISSILI</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='A' data-girone='E'><td>SABATO</td><td>2025-04-19</td><td>14:40</td><td>A</td><td>I DISTINTI</td><td>TRONA-TI</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='B' data-girone='F'><td>SABATO</td><td>2025-04-19</td><td>14:40</td><td>B</td><td>ATLETICO BIRRAO</td><td>TEMPTATION BARLAND</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='A' data-girone='A'><td>SABATO</td><td>2025-04-19</td><td>15:00</td><td>A</td><td>I MEDIOCRI</td><td>RISTORANTE LA ROCCA</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='B' data-girone='B'><td>SABATO</td><td>2025-04-19</td><td>15:00</td><td>B</td><td>FRUNI UNITED</td><td>BIRRA E CORI</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='A' data-girone='C'><td>SABATO</td><td>2025-04-19</td><td>15:20</td><td>A</td><td>CO-CO COGUARI</td><td>I RE CO-LIONS</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='B' data-girone='D'><td>SABATO</td><td>2025-04-19</td><td>15:20</td><td>B</td><td>I MISSILI</td><td>AURORA BIRREALE</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='A' data-girone='E'><td>SABATO</td><td>2025-04-19</td><td>15:40</td><td>A</td><td>TRONA-TI</td><td>TEAM OLESTO</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='B' data-girone='F'><td>SABATO</td><td>2025-04-19</td><td>15:40</td><td>B</td><td>TEMPTATION BARLAND</td><td>HERTA VERNELLO</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='A' data-girone='A'><td>SABATO</td><td>2025-04-19</td><td>16:00</td><td>A</td><td>LEGOLASSO</td><td>LA CARICA DEI 104</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='B' data-girone='B'><td>SABATO</td><td>2025-04-19</td><td>16:00</td><td>B</td><td>WELCOME ALCOHOLICS</td><td>MS</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='A' data-girone='C'><td>SABATO</td><td>2025-04-19</td><td>16:20</td><td>A</td><td>FC TINGENIA</td><td>MUNAY</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='B' data-girone='D'><td>SABATO</td><td>2025-04-19</td><td>16:20</td><td>B</td><td>ESPRESSGOL MACCHIATO</td><td>LA SOLEGGIATA</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='A' data-girone='E'><td>SABATO</td><td>2025-04-19</td><td>16:40</td><td>A</td><td>I DISTINTI</td><td>PANTERONE</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='B' data-girone='F'><td>SABATO</td><td>2025-04-19</td><td>16:40</td><td>B</td><td>ATLETICO BIRRAO</td><td>REAL MAI-DRIT</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='A' data-girone='G'><td>SABATO</td><td>2025-04-19</td><td>17:00</td><td>A</td><td>MANCHESTER FICHI</td><td>FUNKY MONKEY</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='B' data-girone='G'><td>SABATO</td><td>2025-04-19</td><td>17:00</td><td>B</td><td>GLI IRRIDUCIBILI</td><td>ABCF ASTON BIRRA</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='A' data-girone='A'><td>SABATO</td><td>2025-04-19</td><td>17:20</td><td>A</td><td>RISTORANTE LA ROCCA</td><td>BIANCANEVE E I 7 CM</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='B' data-girone='B'><td>SABATO</td><td>2025-04-19</td><td>17:20</td><td>B</td><td>BIRRA E CORI</td><td>POLLINATOR'S</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='A' data-girone='C'><td>SABATO</td><td>2025-04-19</td><td>17:40</td><td>A</td><td>I RE CO-LIONS</td><td>STIRATEAM</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='B' data-girone='D'><td>SABATO</td><td>2025-04-19</td><td>17:40</td><td>B</td><td>AURORA BIRREALE</td><td>TEAM NOCINO</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='A' data-girone='E'><td>SABATO</td><td>2025-04-19</td><td>18:00</td><td>A</td><td>TEAM OLESTO</td><td>RED DEVILS GENEROUS</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='B' data-girone='F'><td>SABATO</td><td>2025-04-19</td><td>18:00</td><td>B</td><td>HERTA VERNELLO</td><td>RAPID MIATANT</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='A' data-girone='G'><td>SABATO</td><td>2025-04-19</td><td>18:20</td><td>A</td><td>MANCHESTER FICHI</td><td>TI CHE TE TACHET I TAC</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='B' data-girone='G'><td>SABATO</td><td>2025-04-19</td><td>18:20</td><td>B</td><td>FUNKY MONKEY</td><td>GLI IRRIDUCIBILI</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='A' data-girone='A'><td>SABATO</td><td>2025-04-19</td><td>18:40</td><td>A</td><td>BIANCANEVE E I 7 CM</td><td>LA CARICA DEI 104</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='B' data-girone='B'><td>SABATO</td><td>2025-04-19</td><td>18:40</td><td>B</td><td>POLLINATOR'S</td><td>MS</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='A' data-girone='C'><td>SABATO</td><td>2025-04-19</td><td>19:00</td><td>A</td><td>STIRATEAM</td><td>MUNAY</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='B' data-girone='D'><td>SABATO</td><td>2025-04-19</td><td>19:00</td><td>B</td><td>TEAM NOCINO</td><td>LA SOLEGGIATA</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='A' data-girone='E'><td>SABATO</td><td>2025-04-19</td><td>19:20</td><td>A</td><td>RED DEVILS GENEROUS</td><td>PANTERONE</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='B' data-girone='F'><td>SABATO</td><td>2025-04-19</td><td>19:20</td><td>B</td><td>RAPID MIATANT</td><td>REAL MAI-DRIT</td><td>0-0</td></tr>
-<tr data-giorno='SABATO' data-campo='A' data-girone='G'><td>SABATO</td><td>2025-04-19</td><td>19:40</td><td>A</td><td>ABCF ASTON BIRRA</td><td>TI CHE TE TACHET I TAC</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='A' data-girone='G'><td>DOMENICA</td><td>2025-04-20</td><td>14:00</td><td>A</td><td>GLI IRRIDUCIBILI</td><td>TI CHE TE TACHET I TAC</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='A' data-girone='E'><td>DOMENICA</td><td>2025-04-20</td><td>14:20</td><td>A</td><td>TRONA-TI</td><td>RED DEVILS GENEROUS</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='B' data-girone='F'><td>DOMENICA</td><td>2025-04-20</td><td>14:20</td><td>B</td><td>TEMPTATION BARLAND</td><td>RAPID MIATANT</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='A' data-girone='C'><td>DOMENICA</td><td>2025-04-20</td><td>14:40</td><td>A</td><td>CO-CO COGUARI</td><td>STIRATEAM</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='B' data-girone='D'><td>DOMENICA</td><td>2025-04-20</td><td>14:40</td><td>B</td><td>I MISSILI</td><td>TEAM NOCINO</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='A' data-girone='A'><td>DOMENICA</td><td>2025-04-20</td><td>15:00</td><td>A</td><td>I MEDIOCRI</td><td>BIANCANEVE E I 7 CM</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='B' data-girone='B'><td>DOMENICA</td><td>2025-04-20</td><td>15:00</td><td>B</td><td>FRUNI UNITED</td><td>POLLINATOR'S</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='A' data-girone='G'><td>DOMENICA</td><td>2025-04-20</td><td>15:20</td><td>A</td><td>FUNKY MONKEY</td><td>ABCF ASTON BIRRA</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='B' data-girone='G'><td>DOMENICA</td><td>2025-04-20</td><td>15:20</td><td>B</td><td>MANCHESTER FICHI</td><td>GLI IRRIDUCIBILI</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='A' data-girone='E'><td>DOMENICA</td><td>2025-04-20</td><td>15:40</td><td>A</td><td>TRONA-TI</td><td>PANTERONE</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='B' data-girone='F'><td>DOMENICA</td><td>2025-04-20</td><td>15:40</td><td>B</td><td>TEMPTATION BARLAND</td><td>REAL MAI-DRIT</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='A' data-girone='C'><td>DOMENICA</td><td>2025-04-20</td><td>16:00</td><td>A</td><td>CO-CO COGUARI</td><td>MUNAY</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='B' data-girone='D'><td>DOMENICA</td><td>2025-04-20</td><td>16:00</td><td>B</td><td>I MISSILI</td><td>LA SOLEGGIATA</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='A' data-girone='A'><td>DOMENICA</td><td>2025-04-20</td><td>16:20</td><td>A</td><td>I MEDIOCRI</td><td>LA CARICA DEI 104</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='B' data-girone='B'><td>DOMENICA</td><td>2025-04-20</td><td>16:20</td><td>B</td><td>FRUNI UNITED</td><td>MS</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='A' data-girone='G'><td>DOMENICA</td><td>2025-04-20</td><td>16:40</td><td>A</td><td>FUNKY MONKEY</td><td>TI CHE TE TACHET I TAC</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='B' data-girone='G'><td>DOMENICA</td><td>2025-04-20</td><td>16:40</td><td>B</td><td>MANCHESTER FICHI</td><td>ABCF ASTON BIRRA</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='A' data-girone='E'><td>DOMENICA</td><td>2025-04-20</td><td>17:00</td><td>A</td><td>I DISTINTI</td><td>RED DEVILS GENEROUS</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='B' data-girone='F'><td>DOMENICA</td><td>2025-04-20</td><td>17:00</td><td>B</td><td>ATLETICO BIRRAO</td><td>RAPID MIATANT</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='A' data-girone='C'><td>DOMENICA</td><td>2025-04-20</td><td>17:20</td><td>A</td><td>FC TINGENIA</td><td>STIRATEAM</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='B' data-girone='D'><td>DOMENICA</td><td>2025-04-20</td><td>17:20</td><td>B</td><td>ESPRESSGOL MACCHIATO</td><td>TEAM NOCINO</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='A' data-girone='A'><td>DOMENICA</td><td>2025-04-20</td><td>17:40</td><td>A</td><td>LEGOLASSO</td><td>BIANCANEVE E I 7 CM</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='B' data-girone='B'><td>DOMENICA</td><td>2025-04-20</td><td>17:40</td><td>B</td><td>WELCOME ALCOHOLICS</td><td>POLLINATOR'S</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='A' data-girone='E'><td>DOMENICA</td><td>2025-04-20</td><td>18:00</td><td>A</td><td>TEAM OLESTO</td><td>PANTERONE</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='B' data-girone='F'><td>DOMENICA</td><td>2025-04-20</td><td>18:00</td><td>B</td><td>HERTA VERNELLO</td><td>REAL MAI-DRIT</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='A' data-girone='C'><td>DOMENICA</td><td>2025-04-20</td><td>18:20</td><td>A</td><td>I RE CO-LIONS</td><td>MUNAY</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='B' data-girone='D'><td>DOMENICA</td><td>2025-04-20</td><td>18:20</td><td>B</td><td>AURORA BIRREALE</td><td>LA SOLEGGIATA</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='A' data-girone='A'><td>DOMENICA</td><td>2025-04-20</td><td>18:40</td><td>A</td><td>RISTORANTE LA ROCCA</td><td>LA CARICA DEI 104</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='B' data-girone='B'><td>DOMENICA</td><td>2025-04-20</td><td>18:40</td><td>B</td><td>BIRRA E CORI</td><td>MS</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='A' data-girone='E'><td>DOMENICA</td><td>2025-04-20</td><td>19:00</td><td>A</td><td>I DISTINTI</td><td>TEAM OLESTO</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='B' data-girone='F'><td>DOMENICA</td><td>2025-04-20</td><td>19:00</td><td>B</td><td>ATLETICO BIRRAO</td><td>HERTA VERNELLO</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='A' data-girone='C'><td>DOMENICA</td><td>2025-04-20</td><td>19:20</td><td>A</td><td>FC TINGENIA</td><td>I RE CO-LIONS</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='B' data-girone='D'><td>DOMENICA</td><td>2025-04-20</td><td>19:20</td><td>B</td><td>ESPRESSGOL MACCHIATO</td><td>AURORA BIRREALE</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='A' data-girone='A'><td>DOMENICA</td><td>2025-04-20</td><td>19:40</td><td>A</td><td>LEGOLASSO</td><td>RISTORANTE LA ROCCA</td><td>0-0</td></tr>
-<tr data-giorno='DOMENICA' data-campo='B' data-girone='B'><td>DOMENICA</td><td>2025-04-20</td><td>19:40</td><td>B</td><td>WELCOME ALCOHOLICS</td><td>BIRRA E CORI</td><td>0-0</td></tr>
-
-    </tbody>
-  </table>
+  <div id="programma"></div>
+  <div id="classifiche"></div>
 
   <script>
-    
-    function filtra() {
-      const gironeSelezionato = document.getElementById("filtroGirone").value;
-      const classifiche = document.querySelectorAll(".classifica");
-      classifiche.forEach(cls => {
-        const gr = cls.getAttribute("data-girone");
-        cls.style.display = (!gironeSelezionato || gr === gironeSelezionato) ? "" : "none";
-      });
-    
-      const giorno = document.getElementById("filtroGiorno").value;
-      const campo = document.getElementById("filtroCampo").value;
-      const girone = document.getElementById("filtroGirone").value;
-      const righe = document.querySelectorAll("#tabellaPartite tr");
+    google.charts.load('current', { packages: ['table'] });
+    google.charts.setOnLoadCallback(loadLiveData);
+    setInterval(loadLiveData, 60000); // aggiornamento ogni 60 sec
 
-      righe.forEach(riga => {
-        const g = riga.getAttribute("data-giorno");
-        const c = riga.getAttribute("data-campo");
-        const gr = riga.getAttribute("data-girone");
-
-        const mostra = (!giorno || g === giorno) &&
-                       (!campo || c === campo) &&
-                       (!girone || gr === girone);
-
-        riga.style.display = mostra ? "" : "none";
+    function loadLiveData() {
+      const query = new google.visualization.Query('https://docs.google.com/spreadsheets/d/1j-Yp9vy-ZVMn1DvMLrt6Wf5N1rgoxQxsCHiqe8gNuuc/gviz/tq?sheet=Programma');
+      query.send(response => {
+        if (response.isError()) {
+          document.getElementById("programma").innerHTML = "<p style='color:red;'>Errore nel caricamento dati: " + response.getMessage() + "</p>";
+          return;
+        }
+        const data = response.getDataTable();
+        const partite = [];
+        for (let i = 0; i < data.getNumberOfRows(); i++) {
+          partite.push({
+            giorno: data.getFormattedValue(i, 0),
+            data: data.getFormattedValue(i, 1),
+            ora: data.getFormattedValue(i, 2),
+            campo: data.getFormattedValue(i, 3),
+            squadra1: data.getFormattedValue(i, 6),
+            squadra2: data.getFormattedValue(i, 7),
+            risultato: data.getFormattedValue(i, 8)
+          });
+        }
+        renderProgramma(partite);
       });
     }
+
+    function renderProgramma(partite) {
+      let html = "<h2>Programma</h2><table><thead><tr><th>Giorno</th><th>Data</th><th>Ora</th><th>Campo</th><th>Squadra 1</th><th>Squadra 2</th><th>Risultato</th></tr></thead><tbody>";
+      partite.forEach(p => {
+        html += `<tr><td>${p.giorno}</td><td>${p.data}</td><td>${p.ora}</td><td>${p.campo}</td><td>${p.squadra1}</td><td>${p.squadra2}</td><td>${p.risultato}</td></tr>`;
+      });
+      html += "</tbody></table>";
+      document.getElementById("programma").innerHTML = html;
+    }
   </script>
-<div id='classifiche'>
-    <div class="classifica" data-girone="A">
-      <h2>Classifica Girone A</h2>
-      
-<div style="text-align:center; margin-bottom: 20px;">
-  <button onclick="aggiornaManuale()" style="padding: 10px 20px; font-size: 16px;">🔄 Aggiorna risultati</button>
-</div>
-<table>
-        <thead><tr><th>Squadra</th><th>PG</th><th>V</th><th>N</th><th>P</th><th>GF</th><th>GS</th><th>DR</th><th>PT</th></tr></thead>
-        <tbody><tr data-girone='A'><td>LEGOLASSO</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='A'><td>I MEDIOCRI</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='A'><td>RISTORANTE LA ROCCA</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='A'><td>LA CARICA DEI 104</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='A'><td>BIANCANEVE E I 7 CM</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-</tbody>
-      </table>
-    </div>
-    
-    <div class="classifica" data-girone="B">
-      <h2>Classifica Girone B</h2>
-      
-<div style="text-align:center; margin-bottom: 20px;">
-  <button onclick="aggiornaManuale()" style="padding: 10px 20px; font-size: 16px;">🔄 Aggiorna risultati</button>
-</div>
-<table>
-        <thead><tr><th>Squadra</th><th>PG</th><th>V</th><th>N</th><th>P</th><th>GF</th><th>GS</th><th>DR</th><th>PT</th></tr></thead>
-        <tbody><tr data-girone='B'><td>WELCOME ALCOHOLICS</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='B'><td>FRUNI UNITED</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='B'><td>BIRRA E CORI</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='B'><td>MS</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='B'><td>POLLINATOR'S</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-</tbody>
-      </table>
-    </div>
-    
-    <div class="classifica" data-girone="C">
-      <h2>Classifica Girone C</h2>
-      
-<div style="text-align:center; margin-bottom: 20px;">
-  <button onclick="aggiornaManuale()" style="padding: 10px 20px; font-size: 16px;">🔄 Aggiorna risultati</button>
-</div>
-<table>
-        <thead><tr><th>Squadra</th><th>PG</th><th>V</th><th>N</th><th>P</th><th>GF</th><th>GS</th><th>DR</th><th>PT</th></tr></thead>
-        <tbody><tr data-girone='C'><td>FC TINGENIA</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='C'><td>CO-CO COGUARI</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='C'><td>I RE CO-LIONS</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='C'><td>MUNAY</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='C'><td>STIRATEAM</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-</tbody>
-      </table>
-    </div>
-    
-    <div class="classifica" data-girone="D">
-      <h2>Classifica Girone D</h2>
-      
-<div style="text-align:center; margin-bottom: 20px;">
-  <button onclick="aggiornaManuale()" style="padding: 10px 20px; font-size: 16px;">🔄 Aggiorna risultati</button>
-</div>
-<table>
-        <thead><tr><th>Squadra</th><th>PG</th><th>V</th><th>N</th><th>P</th><th>GF</th><th>GS</th><th>DR</th><th>PT</th></tr></thead>
-        <tbody><tr data-girone='D'><td>ESPRESSGOL MACCHIATO</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='D'><td>I MISSILI</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='D'><td>AURORA BIRREALE</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='D'><td>LA SOLEGGIATA</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='D'><td>TEAM NOCINO</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-</tbody>
-      </table>
-    </div>
-    
-    <div class="classifica" data-girone="E">
-      <h2>Classifica Girone E</h2>
-      
-<div style="text-align:center; margin-bottom: 20px;">
-  <button onclick="aggiornaManuale()" style="padding: 10px 20px; font-size: 16px;">🔄 Aggiorna risultati</button>
-</div>
-<table>
-        <thead><tr><th>Squadra</th><th>PG</th><th>V</th><th>N</th><th>P</th><th>GF</th><th>GS</th><th>DR</th><th>PT</th></tr></thead>
-        <tbody><tr data-girone='E'><td>I DISTINTI</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='E'><td>TRONA-TI</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='E'><td>TEAM OLESTO</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='E'><td>PANTERONE</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='E'><td>RED DEVILS GENEROUS</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-</tbody>
-      </table>
-    </div>
-    
-    <div class="classifica" data-girone="F">
-      <h2>Classifica Girone F</h2>
-      
-<div style="text-align:center; margin-bottom: 20px;">
-  <button onclick="aggiornaManuale()" style="padding: 10px 20px; font-size: 16px;">🔄 Aggiorna risultati</button>
-</div>
-<table>
-        <thead><tr><th>Squadra</th><th>PG</th><th>V</th><th>N</th><th>P</th><th>GF</th><th>GS</th><th>DR</th><th>PT</th></tr></thead>
-        <tbody><tr data-girone='F'><td>ATLETICO BIRRAO</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='F'><td>TEMPTATION BARLAND</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='F'><td>HERTA VERNELLO</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='F'><td>REAL MAI-DRIT</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='F'><td>RAPID MIATANT</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-</tbody>
-      </table>
-    </div>
-    
-    <div class="classifica" data-girone="G">
-      <h2>Classifica Girone G</h2>
-      
-<div style="text-align:center; margin-bottom: 20px;">
-  <button onclick="aggiornaManuale()" style="padding: 10px 20px; font-size: 16px;">🔄 Aggiorna risultati</button>
-</div>
-<table>
-        <thead><tr><th>Squadra</th><th>PG</th><th>V</th><th>N</th><th>P</th><th>GF</th><th>GS</th><th>DR</th><th>PT</th></tr></thead>
-        <tbody><tr data-girone='G'><td>MANCHESTER FICHI</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='G'><td>FUNKY MONKEY</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='G'><td>GLI IRRIDUCIBILI</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='G'><td>ABCF ASTON BIRRA</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-<tr data-girone='G'><td>TI CHE TE TACHET I TAC</td><td>4</td><td>0</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4</td></tr>
-</tbody>
-      </table>
-    </div>
-    </div>
-
-<script>
-  // Pulsante di aggiornamento manuale
-  function aggiornaManuale() {
-    loadLiveData();
-  }
-
-  // Aggiornamento automatico ogni 60 secondi
-  setInterval(loadLiveData, 60000);
-</script>
-
 </body>
 </html>

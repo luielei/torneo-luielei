@@ -39,7 +39,7 @@
     <button onclick="loadLiveData()">🔄 Aggiorna</button>
   </div>
 
-  <div id="programma"><p>⏳ Caricamento programma...</p></div>
+  <div id="programma"></div>
   <div id="classifiche"></div>
 
   <script>
@@ -69,7 +69,7 @@ function loadGironi(callback) {
       if (squadra && g) {
         gironiMap[squadra] = g;
       } else {
-        console.warn("Gironi - Riga ignorata:", squadra, g);
+        
       }
 
     }

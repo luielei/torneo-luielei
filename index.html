@@ -45,7 +45,9 @@
   <script>
     google.charts.load('current', { packages: ['table'] });
     
+console.log("Caricamento charts");
 google.charts.setOnLoadCallback(() => {
+  console.log("Inizio loadGironi");
   loadGironi(() => {
     loadLiveData();
   });
@@ -55,6 +57,7 @@ function loadGironi(callback) {
   const gironiQuery = new google.visualization.Query(
     'https://docs.google.com/spreadsheets/d/1j-Yp9vy-ZVMn1DvMLrt6Wf5N1rgoxQxsCHiqe8gNuuc/gviz/tq?sheet=Gironi'
   );
+  console.log("Invio query Gironi");
   gironiQuery.send(resp => {
     if (resp.isError()) {
       alert("Errore caricamento gironi: " + resp.getMessage());
@@ -63,6 +66,7 @@ function loadGironi(callback) {
     const data = resp.getDataTable();
     gironiMap = {};
     for (let i = 0; i < data.getNumberOfRows(); i++) {
+      console.log("Analisi riga gironi:", i);
       const squadra = data.getFormattedValue(i, 0);
       const g = data.getFormattedValue(i, 1);
       if (squadra && g) {
@@ -76,6 +80,7 @@ function loadGironi(callback) {
     setInterval(loadLiveData, 60000);
 
     let gironiMap = {};
+console.log("gironiMap inizializzato");
       "LEGOLASSO": "A",
     "I MEDIOCRI": "A",
     "RISTORANTE LA ROCCA": "A",

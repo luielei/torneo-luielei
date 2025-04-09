@@ -1,88 +1,185 @@
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <title>Torneo LUI & LEI - Pasqua 2025</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body {
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f9f9f9;
-            color: #333;
-            margin: 0;
-            padding: 0;
-        }
-
-        header {
-            background-color: #4CAF50;
-            color: white;
-            padding: 2rem;
-            text-align: center;
-        }
-
-        h1 {
-            margin: 0;
-        }
-
-        main {
-            padding: 2rem;
-        }
-
-        section {
-            margin-bottom: 3rem;
-        }
-
-        h2 {
-            border-bottom: 2px solid #4CAF50;
-            padding-bottom: 0.5rem;
-        }
-
-        .iframe-container {
-            position: relative;
-            overflow: hidden;
-            padding-top: 56.25%; /* 16:9 */
-            height: 0;
-        }
-
-        .iframe-container iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-
-        footer {
-            background-color: #eee;
-            text-align: center;
-            padding: 1rem;
-            font-size: 0.9rem;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Programma LUI&LEI</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tabletop.js/1.5.4/tabletop.min.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    table { border-collapse: collapse; margin-bottom: 30px; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
+    select { margin-right: 10px; padding: 4px; }
+    h2 { margin-top: 50px; }
+  </style>
 </head>
 <body>
-    <header>
-        <h1>Torneo LUI & LEI - Pasqua 2025</h1>
-        <p>Programma partite & Classifiche in tempo reale</p>
-    </header>
-    <main>
-        <section>
-            <h2>📅 Programma Partite</h2>
-            <div class="iframe-container">
-                <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vS3q6E_B5a4x3oFx6g09eIk04tNB3wZx6TRWv3SCGk5bFj8OnOEKk5ZUF2uwQZob3UBy49YRWfaNhFP/pubhtml?gid=0&single=true&widget=true&headers=false"></iframe>
-            </div>
-        </section>
-        <section>
-            <h2>🏆 Classifiche Gironi</h2>
-            <div class="iframe-container">
-                <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vS3q6E_B5a4x3oFx6g09eIk04tNB3wZx6TRWv3SCGk5bFj8OnOEKk5ZUF2uwQZob3UBy49YRWfaNhFP/pubhtml?gid=1195570605&single=true&widget=true&headers=false"></iframe>
-            </div>
-        </section>
-    </main>
-    <footer>
-        © 2025 Torneo LUI & LEI - Organizzazione by IGS | Dati live da Google Sheets
-    </footer>
+
+<h1>Programma LUI&LEI</h1>
+
+<div>
+  <label for="filtro-giorno">Giorno:</label>
+  <select id="filtro-giorno">
+    <option value="">Tutti</option>
+  </select>
+
+  <label for="filtro-campo">Campo:</label>
+  <select id="filtro-campo">
+    <option value="">Tutti</option>
+  </select>
+
+  <label for="filtro-girone">Girone:</label>
+  <select id="filtro-girone">
+    <option value="">Tutti</option>
+  </select>
+</div>
+
+<h2>Partite</h2>
+<table id="partite">
+  <thead>
+    <tr>
+      <th>Data</th>
+      <th>Ora</th>
+      <th>Campo</th>
+      <th>Girone</th>
+      <th>Squadra A</th>
+      <th>Risultato</th>
+      <th>Squadra B</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<div id="classifiche-container"></div>
+
+<script>
+const sheetURL = 'https://docs.google.com/spreadsheets/d/1j-Yp9vy-ZVMn1DvMLrt6Wf5N1rgoxQxsCHiqe8gNuuc/pubhtml';
+
+let partite = [];
+
+function parseRisultato(ris) {
+  const match = ris.match(/(\d+)\s*-\s*(\d+)/);
+  if (match) {
+    return [parseInt(match[1]), parseInt(match[2])];
+  }
+  return null;
+}
+
+function aggiornaFiltri() {
+  const giorni = new Set();
+  const campi = new Set();
+  const gironi = new Set();
+
+  partite.forEach(p => {
+    giorni.add(p.DATA);
+    campi.add(p.CAMPO);
+    gironi.add(p.GIRONE);
+  });
+
+  for (let id of ['giorno', 'campo', 'girone']) {
+    const select = document.getElementById(`filtro-${id}`);
+    const valori = [...(id === 'giorno' ? giorni : id === 'campo' ? campi : gironi)].sort();
+    valori.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = v;
+      select.appendChild(opt);
+    });
+  }
+}
+
+function mostraPartite() {
+  const tbody = document.querySelector('#partite tbody');
+  tbody.innerHTML = '';
+  const giorno = document.getElementById('filtro-giorno').value;
+  const campo = document.getElementById('filtro-campo').value;
+  const girone = document.getElementById('filtro-girone').value;
+
+  const filtrate = partite.filter(p =>
+    (!giorno || p.DATA === giorno) &&
+    (!campo || p.CAMPO === campo) &&
+    (!girone || p.GIRONE === girone)
+  ).sort((a, b) => new Date(`${a.DATA} ${a.ORA}`) - new Date(`${b.DATA} ${b.ORA}`));
+
+  filtrate.forEach(p => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${p.DATA}</td>
+      <td>${p.ORA}</td>
+      <td>${p.CAMPO}</td>
+      <td>${p.GIRONE}</td>
+      <td>${p['SQUADRA A']}</td>
+      <td>${p.RISULTATO}</td>
+      <td>${p['SQUADRA B']}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  mostraClassifiche(filtrate);
+}
+
+function mostraClassifiche(partiteFiltrate) {
+  const container = document.getElementById('classifiche-container');
+  container.innerHTML = '';
+
+  const gironi = [...new Set(partiteFiltrate.map(p => p.GIRONE))];
+
+  gironi.forEach(g => {
+    const squadre = {};
+    partiteFiltrate.filter(p => p.GIRONE === g).forEach(p => {
+      if (!squadre[p['SQUADRA A']]) squadre[p['SQUADRA A']] = { squadra: p['SQUADRA A'], punti: 0, gf: 0, gs: 0, giocate: 0 };
+      if (!squadre[p['SQUADRA B']]) squadre[p['SQUADRA B']] = { squadra: p['SQUADRA B'], punti: 0, gf: 0, gs: 0, giocate: 0 };
+      const risultato = parseRisultato(p.RISULTATO);
+      if (!risultato) return;
+      const [golA, golB] = risultato;
+
+      squadre[p['SQUADRA A']].gf += golA;
+      squadre[p['SQUADRA A']].gs += golB;
+      squadre[p['SQUADRA A']].giocate += 1;
+
+      squadre[p['SQUADRA B']].gf += golB;
+      squadre[p['SQUADRA B']].gs += golA;
+      squadre[p['SQUADRA B']].giocate += 1;
+
+      if (golA > golB) squadre[p['SQUADRA A']].punti += 3;
+      else if (golA < golB) squadre[p['SQUADRA B']].punti += 3;
+      else {
+        squadre[p['SQUADRA A']].punti += 1;
+        squadre[p['SQUADRA B']].punti += 1;
+      }
+    });
+
+    const classifica = Object.values(squadre).sort((a, b) =>
+      b.punti - a.punti ||
+      (b.gf - b.gs) - (a.gf - a.gs) ||
+      b.gf - a.gf
+    );
+
+    const tabella = document.createElement('table');
+    tabella.innerHTML = `
+      <caption><h2>Classifica Girone ${g}</h2></caption>
+      <thead><tr><th>Squadra</th><th>PG</th><th>Pt</th><th>GF</th><th>GS</th><th>Diff</th></tr></thead>
+      <tbody>
+        ${classifica.map(s =>
+          `<tr><td>${s.squadra}</td><td>${s.giocate}</td><td>${s.punti}</td><td>${s.gf}</td><td>${s.gs}</td><td>${s.gf - s.gs}</td></tr>`
+        ).join('')}
+      </tbody>
+    `;
+    container.appendChild(tabella);
+  });
+}
+
+document.querySelectorAll('select').forEach(sel => sel.addEventListener('change', mostraPartite));
+
+Tabletop.init({
+  key: sheetURL,
+  callback: data => {
+    partite = data.Programma.elements;
+    aggiornaFiltri();
+    mostraPartite();
+  },
+  simpleSheet: false
+});
+</script>
+
 </body>
 </html>

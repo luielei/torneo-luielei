@@ -2,11 +2,13 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <title>Fase Finale Torneo</title>
+  <title>Fase Finale - Torneo LUI&LEI</title>
   <style>
     body {
       font-family: sans-serif;
       padding: 20px;
+      max-width: 1000px;
+      margin: auto;
     }
     h1 {
       text-align: center;
@@ -14,21 +16,21 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 40px;
+      margin: 20px 0;
     }
     th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
+      border: 1px solid #aaa;
+      padding: 6px 10px;
       text-align: center;
     }
     th {
-      background: #f0f0f0;
+      background: #eee;
     }
     caption {
       text-align: left;
-      font-size: 1.2em;
       font-weight: bold;
       margin-bottom: 5px;
+      font-size: 1.1em;
     }
     .vincente {
       background-color: #c8f7c5;
@@ -45,14 +47,14 @@
     const finaliCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=660358441&single=true&output=csv";
 
     async function caricaCSV(url) {
-      const cachebuster = "&cachebuster=" + new Date().getTime();
+      const cachebuster = "&cb=" + new Date().getTime();
       const res = await fetch(url + cachebuster);
       const text = await res.text();
-      const [header, ...rows] = text.trim().split("\n");
-      const headers = header.split(",");
-      return rows.map(r => {
-        const values = r.split(",");
-        return Object.fromEntries(headers.map((h, i) => [h.trim(), values[i]?.trim()]));
+      const [header, ...righe] = text.trim().split("\n");
+      const intestazioni = header.split(",");
+      return righe.map(r => {
+        const valori = r.split(",");
+        return Object.fromEntries(intestazioni.map((h, i) => [h.trim(), valori[i]?.trim()]));
       });
     }
 
@@ -74,14 +76,15 @@
           s1.gf += g1; s1.gs += g2; s1.giocate++;
           s2.gf += g2; s2.gs += g1; s2.giocate++;
           if (g1 > g2) s1.punti += 3;
-          else if (g1 < g2) s2.punti += 3;
+          else if (g2 > g1) s2.punti += 3;
           else { s1.punti += 1; s2.punti += 1; }
         }
       });
+
       const risultati = {};
       for (const g in classifiche) {
-        const squadre = Object.entries(classifiche[g]).map(([id, dati]) => ({
-          id, ...dati, diff: dati.gf - dati.gs
+        const squadre = Object.entries(classifiche[g]).map(([id, s]) => ({
+          id, ...s, diff: s.gf - s.gs
         }));
         squadre.sort((a, b) => b.punti - a.punti || b.diff - a.diff || b.gf - a.gf);
         risultati[g] = squadre;
@@ -108,8 +111,8 @@
         return classifiche[g]?.[pos]?.nome || label;
       }
       if (matchTerze) {
-        const index = matchTerze[1].toLowerCase().includes("seconda") ? 1 : 0;
-        return terze[index]?.nome || label;
+        const idx = matchTerze[1].toLowerCase().includes("seconda") ? 1 : 0;
+        return terze[idx]?.nome || label;
       }
       if (matchVincente) {
         const key = `${matchVincente[1].toLowerCase()}_${matchVincente[2]}`;
@@ -119,15 +122,15 @@
     }
 
     function renderFinali(partite, classifiche) {
-      const div = document.getElementById("faseFinale");
-      div.innerHTML = "";
+      const container = document.getElementById("faseFinale");
+      container.innerHTML = "";
 
       const tutteTerze = Object.values(classifiche).map(g => g[2]).filter(Boolean);
       tutteTerze.sort((a, b) => b.punti - a.punti || (b.gf - b.gs) - (a.gf - a.gs) || b.gf - a.gf);
       const miglioriTerze = tutteTerze.slice(0, 2);
 
       const vincitori = {};
-      const ordineTurni = ["Ottavi di finale", "Quarti di finale", "Semifinali", "Finale", "Finalina"];
+      const ordine = ["Ottavi di finale", "Quarti di finale", "Semifinali", "Finale", "Finalina"];
       const perTurno = {};
 
       for (const p of partite) {
@@ -135,9 +138,10 @@
         perTurno[p.TURNO].push(p);
       }
 
-      ordineTurni.forEach(turno => {
+      ordine.forEach(turno => {
         const matches = perTurno[turno];
         if (!matches) return;
+
         const table = document.createElement("table");
         const caption = document.createElement("caption");
         caption.textContent = turno;
@@ -147,25 +151,27 @@
           <tbody></tbody>
         `;
         const tbody = table.querySelector("tbody");
-        matches.forEach((p, idx) => {
-          const squadra1 = getNome(p.SQUADRA1, classifiche, miglioriTerze, vincitori);
-          const squadra2 = getNome(p.SQUADRA2, classifiche, miglioriTerze, vincitori);
-          const vincente = trovaVincente(p.RISULTATO, squadra1, squadra2);
-          const chiave = turno.toLowerCase().split(" ")[0] + "_" + (idx + 1);
-          if (vincente) vincitori[chiave] = vincente;
-          const riga = `
+
+        matches.forEach((p, i) => {
+          const s1 = getNome(p.SQUADRA1, classifiche, miglioriTerze, vincitori);
+          const s2 = getNome(p.SQUADRA2, classifiche, miglioriTerze, vincitori);
+          const vincente = trovaVincente(p.RISULTATO, s1, s2);
+          const key = turno.toLowerCase().split(" ")[0] + "_" + (i + 1);
+          if (vincente) vincitori[key] = vincente;
+
+          tbody.innerHTML += `
             <tr>
               <td>${p.DATA}</td>
               <td>${p.ORA}</td>
               <td>${p.CAMPO}</td>
-              <td class="${vincente === squadra1 ? "vincente" : ""}">${squadra1}</td>
+              <td class="${vincente === s1 ? 'vincente' : ''}">${s1}</td>
               <td>${p.RISULTATO}</td>
-              <td class="${vincente === squadra2 ? "vincente" : ""}">${squadra2}</td>
+              <td class="${vincente === s2 ? 'vincente' : ''}">${s2}</td>
             </tr>
           `;
-          tbody.innerHTML += riga;
         });
-        div.appendChild(table);
+
+        container.appendChild(table);
       });
     }
 

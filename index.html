@@ -104,7 +104,8 @@
       }
       const v = label.match(vincenteTurno);
       if (v) {
-        return vincitori[v[1] + "_" + v[2]] || label;
+        const chiave = v[1].toLowerCase() + "_" + v[2];
+        return vincitori[chiave] || label;
       }
       return label;
     }

@@ -2,87 +2,89 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Programma Torneo LUI&LEI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mini-Torneo LUI&LEI</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #f9f9f9;
-      margin: 20px;
-      color: #333;
+      background-color: #f0f2f5;
+      margin: 0;
+      padding: 20px;
     }
     h2 {
-      color: #2c3e50;
-      border-bottom: 2px solid #ccc;
-      padding-bottom: 5px;
+      color: #333;
+      margin-top: 40px;
     }
-    table {
-      border-collapse: collapse;
-      width: 100%;
+    .filters {
       margin-bottom: 20px;
     }
-    table, th, td {
-      border: 1px solid #ccc;
+    .filters label {
+      margin-right: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      background-color: #fff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
     }
     th {
-      background-color: #2980b9;
+      background-color: #4CAF50;
       color: white;
-      padding: 8px;
-      text-align: center;
     }
-    td {
-      padding: 8px;
-      text-align: center;
+    .highlight {
+      background-color: #c8e6c9 !important;
     }
-    .filter {
-      margin-bottom: 15px;
-    }
-    .highlight-top {
-      background-color: #d1f7d6;
-    }
-    .highlight-third {
-      background-color: #fcf3cf;
+    .best-terza {
+      background-color: #fff9c4 !important;
     }
   </style>
 </head>
 <body>
-  <h1>🏆 Torneo LUI&LEI – Programma, Classifiche e Fase Finale</h1>
+  <h1>Mini-Torneo LUI&LEI</h1>
 
-  <div class="filter">
-    <label for="filter-giorno">Filtro Giorno:</label>
-    <select id="filter-giorno"><option value="">Tutti</option></select>
+  <div class="filters">
+    <label for="campoFilter">Campo:</label>
+    <select id="campoFilter"></select>
 
-    <label for="filter-campo">Filtro Campo:</label>
-    <select id="filter-campo"><option value="">Tutti</option></select>
+    <label for="giornoFilter">Giorno:</label>
+    <select id="giornoFilter"></select>
 
-    <label for="filter-girone">Filtro Girone:</label>
-    <select id="filter-girone"><option value="">Tutti</option></select>
+    <label for="gironeFilter">Girone:</label>
+    <select id="gironeFilter"></select>
   </div>
 
-  <h2>📅 Programma Partite</h2>
-  <table id="programma-table"></table>
+  <h2>Partite Fase a Gironi</h2>
+  <table id="partiteTable"></table>
 
-  <h2>📊 Classifiche per Girone</h2>
-  <div id="classifiche-container"></div>
+  <h2>Classifiche</h2>
+  <div id="classificheContainer"></div>
 
-  <h2>🥉 Classifica Migliori Terze</h2>
-  <table id="terze-table"></table>
+  <h2>Fase Finale</h2>
+  <table id="finaliTable"></table>
 
-  <h2>🏆 Fase Finale</h2>
-  <table id="finali-table"></table>
+<script>
+const programmaCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=1898554956&single=true&output=csv';
+const finaliCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=660358441&single=true&output=csv';
 
-  <script>
-    const programmaCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=1898554956&single=true&output=csv';
-    const finaliCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=660358441&single=true&output=csv';
-
-    let partite = [];
-    let finali = [];
-
-    const filters = {
-      giorno: '',
-      campo: '',
-      girone: ''
-    };
+async function loadCSV(url) {
+  const cacheBuster = `&t=${Date.now()}`;
+  const res = await fetch(url + cacheBuster);
+  const text = await res.text();
+  const [headerLine, ...lines] = text.trim().split('\n');
+  const headers = headerLine.split(',');
+  return lines.map(line => {
+    const values = line.split(',');
+    const obj = {};
+    headers.forEach((h, i) => obj[h.trim()] = values[i]?.trim());
+    return obj;
+  });
+}
 
     async function loadCSV(url) {
       const res = await fetch(url);

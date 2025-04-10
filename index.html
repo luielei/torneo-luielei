@@ -47,6 +47,9 @@
     .highlight {
       background-color: #d1ffd1 !important;
     }
+    .highlight-terze {
+      background-color: #d1e0ff !important;
+    }
   </style>
 </head>
 <body>
@@ -71,15 +74,15 @@
   <h2>Classifiche</h2>
   <div id="classifiche"></div>
 
-  <h2>Fase Finale</h2>
-  <table id="finali"></table>
+  <h2>Migliori Terze Classificate</h2>
+  <div id="migliori-terze"></div>
 </div>
 
 <script>
-const CSV_GIRONI = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=1898554956&single=true&output=csv';
-const CSV_FINALI = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=660358441&single=true&output=csv';
+const CACHE_BUSTER = `&_=${new Date().getTime()}`;
+const CSV_GIRONI = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=1898554956&single=true&output=csv' + CACHE_BUSTER;
 
-let partite = [], finali = [];
+let partite = [];
 
 function parseCSV(text) {
   const rows = text.trim().split('\n');
@@ -142,33 +145,34 @@ function renderClassifiche(data) {
       gruppi[girone][p.SQUADRA2].n++;
     }
   });
+
   const container = document.getElementById('classifiche');
   container.innerHTML = '';
-  Object.keys(gruppi).forEach(g => {
+  let terze = [];
+
+  Object.keys(gruppi).sort().forEach(g => {
     const squadre = Object.entries(gruppi[g]).map(([nome, stats]) => ({ nome, ...stats }));
     squadre.sort((a, b) => b.punti - a.punti || (b.gf - b.gs) - (a.gf - a.gs));
     const table = document.createElement('table');
     table.innerHTML = `<tr><th colspan="8">Girone ${g}</th></tr>
     <tr><th>Squadra</th><th>Pt</th><th>G</th><th>V</th><th>N</th><th>P</th><th>GF</th><th>GS</th></tr>
-    ${squadre.map((s, i) => `<tr class="${i < 2 ? 'highlight' : ''}"><td>${s.nome}</td><td>${s.punti}</td><td>${s.giocate}</td><td>${s.v}</td><td>${s.n}</td><td>${s.p}</td><td>${s.gf}</td><td>${s.gs}</td></tr>`).join('')}`;
+    ${squadre.map((s, i) => {
+      let cls = i < 2 ? 'highlight' : (i === 2 ? 'terza' : '');
+      if (i === 2) terze.push({ girone: g, ...s });
+      return `<tr class="${cls}"><td>${s.nome}</td><td>${s.punti}</td><td>${s.giocate}</td><td>${s.v}</td><td>${s.n}</td><td>${s.p}</td><td>${s.gf}</td><td>${s.gs}</td></tr>`;
+    }).join('')}`;
     container.appendChild(table);
   });
-}
 
-function renderFinali(data) {
-  const table = document.getElementById('finali');
-  const headers = ['TURNO', 'ORA', 'CAMPO', 'SQUADRA1', 'RISULTATO', 'SQUADRA2'];
-  table.innerHTML = `
-    <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
-    ${data.map(p => `<tr>
-      <td>${p.TURNO}</td>
-      <td>${p.ORA}</td>
-      <td>${p.CAMPO}</td>
-      <td>${p.SQUADRA1}</td>
-      <td>${p.RISULTATO}</td>
-      <td>${p.SQUADRA2}</td>
-    </tr>`).join('')}
-  `;
+  // Migliori terze
+  const terzeOrdinate = terze.sort((a,b)=> b.punti - a.punti || (b.gf - b.gs) - (a.gf - a.gs)).slice(0, 2);
+  const terzeDiv = document.getElementById('migliori-terze');
+  if (terze.length > 0) {
+    const table = document.createElement('table');
+    table.innerHTML = `<tr><th>Girone</th><th>Squadra</th><th>Pt</th><th>G</th><th>V</th><th>N</th><th>P</th><th>GF</th><th>GS</th></tr>
+    ${terze.map(s => `<tr class="${terzeOrdinate.includes(s) ? 'highlight-terze' : ''}"><td>${s.girone}</td><td>${s.nome}</td><td>${s.punti}</td><td>${s.giocate}</td><td>${s.v}</td><td>${s.n}</td><td>${s.p}</td><td>${s.gf}</td><td>${s.gs}</td></tr>`).join('')}`;
+    terzeDiv.appendChild(table);
+  }
 }
 
 function initFilters(data) {
@@ -177,7 +181,7 @@ function initFilters(data) {
   const gironeSel = document.getElementById('girone');
   const campi = [...new Set(data.map(p => p.CAMPO))];
   const giorni = [...new Set(data.map(p => p.GIORNO))];
-  const gironi = [...new Set(data.map(p => p.GIRONE))];
+  const gironi = [...new Set(data.map(p => p.GIRONE))].sort();
   campoSel.innerHTML = '<option value="">Tutti</option>' + campi.map(c => `<option value="${c}">${c}</option>`).join('');
   giornoSel.innerHTML = '<option value="">Tutti</option>' + giorni.map(g => `<option value="${g}">${g}</option>`).join('');
   gironeSel.innerHTML = '<option value="">Tutti</option>' + gironi.map(g => `<option value="${g}">${g}</option>`).join('');
@@ -193,14 +197,12 @@ function initFilters(data) {
 }
 
 async function init() {
-  const [res1, res2] = await Promise.all([fetch(CSV_GIRONI), fetch(CSV_FINALI)]);
-  const [text1, text2] = await Promise.all([res1.text(), res2.text()]);
-  partite = parseCSV(text1);
-  finali = parseCSV(text2);
+  const res = await fetch(CSV_GIRONI);
+  const text = await res.text();
+  partite = parseCSV(text);
   partite.sort((a,b)=>`${a.DATA} ${a.ORA}`.localeCompare(`${b.DATA} ${b.ORA}`));
   renderPartite(partite);
   renderClassifiche(partite);
-  renderFinali(finali);
   initFilters(partite);
 }
 

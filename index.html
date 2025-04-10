@@ -22,6 +22,12 @@
     th {
       background: #eee;
     }
+    caption {
+      caption-side: top;
+      text-align: left;
+      font-size: 1.2em;
+      margin-bottom: 5px;
+    }
     .vincente {
       background-color: #c6f6c3;
       font-weight: bold;
@@ -81,7 +87,7 @@
       return posizioni;
     }
 
-    function getSquadraDaEtichetta(label, classifiche, terze, vincitori = {}) {
+    function getSquadraDaEtichetta(label, classifiche, terze, vincitori) {
       const regex = /^(Prima|Seconda|Terza) classificata girone ([A-Z])$/;
       const terzeLabel = /^(.*)migliore terza classificata$/i;
       const vincenteTurno = /^Vincente (ottavo|quarto|semifinale) (\d+)$/i;
@@ -98,16 +104,15 @@
       }
       const v = label.match(vincenteTurno);
       if (v) {
-        return vincitori[v[1].toLowerCase() + "_" + v[2]] || label;
+        return vincitori[v[1] + "_" + v[2]] || label;
       }
       return label;
     }
 
-    function trovaVincente(ris, squadra1, squadra2) {
+    function trovaVincente(ris, s1, s2) {
       const [g1, g2] = ris.split("-").map(Number);
       if (!isNaN(g1) && !isNaN(g2)) {
-        if (g1 > g2) return squadra1;
-        if (g2 > g1) return squadra2;
+        return g1 > g2 ? s1 : g2 > g1 ? s2 : "";
       }
       return "";
     }
@@ -122,44 +127,42 @@
       const miglioriTerze = tutteTerze.slice(0, 2);
 
       const vincitori = {};
-
+      const turniOrdine = ["Ottavi di finale", "Quarti di finale", "Semifinali", "Finale", "Finalina"];
       const perTurno = {};
+
       datiFinali.forEach(p => {
         if (!perTurno[p.TURNO]) perTurno[p.TURNO] = [];
         perTurno[p.TURNO].push(p);
       });
 
-      const ordini = ["Ottavi di finale", "Quarti di finale", "Semifinali", "Finale", "Finalina"];
-      ordini.forEach(turno => {
+      turniOrdine.forEach(turno => {
         const partite = perTurno[turno];
         if (!partite) return;
         const table = document.createElement("table");
         const caption = document.createElement("caption");
-        caption.innerText = turno;
-        caption.style.fontWeight = "bold";
+        caption.textContent = turno;
         table.appendChild(caption);
         const thead = document.createElement("thead");
         thead.innerHTML = "<tr><th>Data</th><th>Ora</th><th>Campo</th><th>Squadra 1</th><th>Risultato</th><th>Squadra 2</th></tr>";
         table.appendChild(thead);
         const tbody = document.createElement("tbody");
 
-        partite.forEach((p, i) => {
-          const key = turno.toLowerCase().split(" ")[0] + "_" + (i + 1);
-          p.s1 = getSquadraDaEtichetta(p.SQUADRA1, classifiche, miglioriTerze, vincitori);
-          p.s2 = getSquadraDaEtichetta(p.SQUADRA2, classifiche, miglioriTerze, vincitori);
-          p.vincente = trovaVincente(p.RISULTATO, p.s1, p.s2);
-          if (p.vincente) vincitori[key] = p.vincente;
+        partite.forEach((p, idx) => {
+          const chiaveTurno = turno.split(" ")[0].toLowerCase() + "_" + (idx + 1);
+          const squadra1 = getSquadraDaEtichetta(p.SQUADRA1, classifiche, miglioriTerze, vincitori);
+          const squadra2 = getSquadraDaEtichetta(p.SQUADRA2, classifiche, miglioriTerze, vincitori);
+          const vincente = trovaVincente(p.RISULTATO, squadra1, squadra2);
+          if (vincente) vincitori[chiaveTurno] = vincente;
 
           const tr = document.createElement("tr");
-          const td1 = document.createElement("td"); td1.innerText = p.DATA;
-          const td2 = document.createElement("td"); td2.innerText = p.ORA;
-          const td3 = document.createElement("td"); td3.innerText = p.CAMPO;
-          const td4 = document.createElement("td"); td4.innerText = p.s1;
-          if (p.vincente === p.s1) td4.classList.add("vincente");
-          const td5 = document.createElement("td"); td5.innerText = p.RISULTATO;
-          const td6 = document.createElement("td"); td6.innerText = p.s2;
-          if (p.vincente === p.s2) td6.classList.add("vincente");
-          [td1, td2, td3, td4, td5, td6].forEach(td => tr.appendChild(td));
+          tr.innerHTML = `
+            <td>${p.DATA}</td>
+            <td>${p.ORA}</td>
+            <td>${p.CAMPO}</td>
+            <td class="${vincente === squadra1 ? "vincente" : ""}">${squadra1}</td>
+            <td>${p.RISULTATO}</td>
+            <td class="${vincente === squadra2 ? "vincente" : ""}">${squadra2}</td>
+          `;
           tbody.appendChild(tr);
         });
 

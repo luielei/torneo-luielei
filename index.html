@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Torneo LUI&LEI</title>
+  <title>Fase Finale Torneo</title>
   <style>
     body {
       font-family: sans-serif;
@@ -81,9 +81,11 @@
       return posizioni;
     }
 
-    function getSquadraDaEtichetta(label, classifiche, terze) {
-      const regex = /^(Prima|Seconda|Terza) classificata girone ([A-F])$/;
+    function getSquadraDaEtichetta(label, classifiche, terze, vincitori = {}) {
+      const regex = /^(Prima|Seconda|Terza) classificata girone ([A-Z])$/;
       const terzeLabel = /^(.*)migliore terza classificata$/i;
+      const vincenteTurno = /^Vincente (ottavo|quarto|semifinale) (\d+)$/i;
+
       const m = label.match(regex);
       if (m) {
         const posizione = { Prima: 0, Seconda: 1, Terza: 2 }[m[1]];
@@ -94,7 +96,11 @@
         const posizione = t[1].toLowerCase().includes("seconda") ? 1 : 0;
         return terze[posizione]?.nome || label;
       }
-      return label.includes("Vincente") ? "" : label;
+      const v = label.match(vincenteTurno);
+      if (v) {
+        return vincitori[v[1].toLowerCase() + "_" + v[2]] || label;
+      }
+      return label;
     }
 
     function trovaVincente(ris, squadra1, squadra2) {
@@ -115,12 +121,7 @@
         .sort((a, b) => b.punti - a.punti || (b.gf - b.gs) - (a.gf - a.gs) || b.gf - a.gf);
       const miglioriTerze = tutteTerze.slice(0, 2);
 
-      // Sostituisco nomi alle etichette
-      datiFinali.forEach(p => {
-        p.s1 = getSquadraDaEtichetta(p.SQUADRA1, classifiche, miglioriTerze);
-        p.s2 = getSquadraDaEtichetta(p.SQUADRA2, classifiche, miglioriTerze);
-        p.vincente = trovaVincente(p.RISULTATO, p.s1, p.s2);
-      });
+      const vincitori = {};
 
       const perTurno = {};
       datiFinali.forEach(p => {
@@ -128,7 +129,10 @@
         perTurno[p.TURNO].push(p);
       });
 
-      Object.keys(perTurno).forEach(turno => {
+      const ordini = ["Ottavi di finale", "Quarti di finale", "Semifinali", "Finale", "Finalina"];
+      ordini.forEach(turno => {
+        const partite = perTurno[turno];
+        if (!partite) return;
         const table = document.createElement("table");
         const caption = document.createElement("caption");
         caption.innerText = turno;
@@ -138,25 +142,27 @@
         thead.innerHTML = "<tr><th>Data</th><th>Ora</th><th>Campo</th><th>Squadra 1</th><th>Risultato</th><th>Squadra 2</th></tr>";
         table.appendChild(thead);
         const tbody = document.createElement("tbody");
-        perTurno[turno].forEach(p => {
+
+        partite.forEach((p, i) => {
+          const key = turno.toLowerCase().split(" ")[0] + "_" + (i + 1);
+          p.s1 = getSquadraDaEtichetta(p.SQUADRA1, classifiche, miglioriTerze, vincitori);
+          p.s2 = getSquadraDaEtichetta(p.SQUADRA2, classifiche, miglioriTerze, vincitori);
+          p.vincente = trovaVincente(p.RISULTATO, p.s1, p.s2);
+          if (p.vincente) vincitori[key] = p.vincente;
+
           const tr = document.createElement("tr");
-          const td1 = document.createElement("td");
-          td1.innerText = p.DATA;
-          const td2 = document.createElement("td");
-          td2.innerText = p.ORA;
-          const td3 = document.createElement("td");
-          td3.innerText = p.CAMPO;
-          const td4 = document.createElement("td");
-          td4.innerText = p.s1;
+          const td1 = document.createElement("td"); td1.innerText = p.DATA;
+          const td2 = document.createElement("td"); td2.innerText = p.ORA;
+          const td3 = document.createElement("td"); td3.innerText = p.CAMPO;
+          const td4 = document.createElement("td"); td4.innerText = p.s1;
           if (p.vincente === p.s1) td4.classList.add("vincente");
-          const td5 = document.createElement("td");
-          td5.innerText = p.RISULTATO;
-          const td6 = document.createElement("td");
-          td6.innerText = p.s2;
+          const td5 = document.createElement("td"); td5.innerText = p.RISULTATO;
+          const td6 = document.createElement("td"); td6.innerText = p.s2;
           if (p.vincente === p.s2) td6.classList.add("vincente");
           [td1, td2, td3, td4, td5, td6].forEach(td => tr.appendChild(td));
           tbody.appendChild(tr);
         });
+
         table.appendChild(tbody);
         container.appendChild(table);
       });

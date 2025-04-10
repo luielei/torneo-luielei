@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Torneo LUI&LEI - Gironi</title>
+  <title>Torneo LUI&LEI - Fase a Gironi</title>
   <style>
     body {
       font-family: "Arial", sans-serif;
@@ -83,9 +83,8 @@
   <script>
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=1898554956&single=true&output=csv&cachebuster=" + new Date().getTime();
 
-    const gironiData = {};
-    const gironiClassifiche = {};
     let miglioriTerze = [];
+    let tutteLeTerze = [];
 
     function parseCSV(data) {
       const lines = data.split("\n").filter(l => l.trim() !== "");
@@ -170,7 +169,7 @@
       return classifiche;
     }
 
-    function trovaMiglioriTerze(classifiche) {
+    function trovaTerze(classifiche) {
       const terze = [];
 
       for (const girone in classifiche) {
@@ -180,7 +179,8 @@
         if (squadre[2]) terze.push({ ...squadre[2], girone });
       }
 
-      return terze
+      tutteLeTerze = terze;
+      miglioriTerze = [...terze]
         .sort((a, b) => b.punti - a.punti || b.diff - a.diff || b.gf - a.gf)
         .slice(0, 2);
     }
@@ -189,7 +189,7 @@
       const container = document.getElementById("classifiche");
       container.innerHTML = "";
 
-      const evidenziate = new Set(miglioriTerze.map(t => t.squadra));
+      const evidenziateTerze = new Set(miglioriTerze.map(t => t.squadra));
 
       for (const girone of Object.keys(classifiche).sort()) {
         if (gironeFilter && girone !== gironeFilter) continue;
@@ -210,7 +210,9 @@
         const tbody = document.createElement("tbody");
         squadre.forEach((sq, idx) => {
           const row = document.createElement("tr");
-          if (evidenziate.has(sq.squadra)) row.classList.add("highlight");
+          if (idx < 2 || (idx === 2 && evidenziateTerze.has(sq.squadra))) {
+            row.classList.add("highlight");
+          }
           row.innerHTML = `<td>${sq.squadra}</td><td>${sq.punti}</td><td>${sq.giocate}</td><td>${sq.vinte}</td><td>${sq.pareggi}</td><td>${sq.perse}</td><td>${sq.gf}</td><td>${sq.gs}</td><td>${sq.diff}</td>`;
           tbody.appendChild(row);
         });
@@ -224,7 +226,7 @@
       const container = document.getElementById("miglioriTerzeContainer");
       container.innerHTML = "";
 
-      if (!miglioriTerze.length) return;
+      if (!tutteLeTerze.length) return;
 
       const table = document.createElement("table");
       const caption = document.createElement("caption");
@@ -237,9 +239,10 @@
       table.appendChild(thead);
 
       const tbody = document.createElement("tbody");
-      miglioriTerze.forEach(t => {
+      const evidenziate = new Set(miglioriTerze.map(t => t.squadra));
+      tutteLeTerze.forEach(t => {
         const row = document.createElement("tr");
-        row.classList.add("highlight");
+        if (evidenziate.has(t.squadra)) row.classList.add("highlight");
         row.innerHTML = `<td>${t.squadra}</td><td>${t.girone}</td><td>${t.punti}</td><td>${t.giocate}</td><td>${t.vinte}</td><td>${t.pareggi}</td><td>${t.perse}</td><td>${t.gf}</td><td>${t.gs}</td><td>${t.diff}</td>`;
         tbody.appendChild(row);
       });
@@ -284,12 +287,8 @@
       const partite = parseCSV(text);
 
       aggiornaFiltri(partite);
-
       const classifiche = calcolaClassifiche(partite);
-      Object.assign(gironiClassifiche, classifiche);
-
-      miglioriTerze = trovaMiglioriTerze(classifiche);
-
+      trovaTerze(classifiche);
       renderProgramma(partite, {});
       renderClassifiche(classifiche, null);
       renderMiglioriTerze();

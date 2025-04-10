@@ -1,175 +1,140 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mini Torneo Lui&Lei</title>
-    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/luxon@3.3.0/build/global/luxon.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tailwindcss-jit-cdn"></script>
-    <style>
-        body { font-family: 'Arial', sans-serif; }
-        select, table { margin: 0.5rem 0; }
-        .highlight { background-color: #d1fae5; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Programma LUI&LEI</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f2f2f2;
+      color: #333;
+      padding: 20px;
+    }
+    h2 {
+      margin-top: 40px;
+    }
+    select {
+      margin-right: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      background-color: #fff;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #0066cc;
+      color: white;
+    }
+    .highlight {
+      background-color: #d1e7dd !important;
+    }
+    .winner {
+      font-weight: bold;
+      color: green;
+    }
+  </style>
 </head>
-<body class="bg-gray-100 p-4">
-    <h1 class="text-2xl font-bold mb-4">Mini Torneo Lui&Lei - Programma e Classifiche</h1>
+<body>
+  <h1>Programma LUI&LEI - Fase a Gironi e Finali</h1>
 
-    <div class="flex flex-wrap gap-4 mb-4">
-        <div>
-            <label for="campo">Campo:</label>
-            <select id="campo" class="border p-1 rounded">
-                <option value="">Tutti</option>
-            </select>
-        </div>
-        <div>
-            <label for="giorno">Giorno:</label>
-            <select id="giorno" class="border p-1 rounded">
-                <option value="">Tutti</option>
-            </select>
-        </div>
-        <div>
-            <label for="girone">Girone:</label>
-            <select id="girone" class="border p-1 rounded">
-                <option value="">Tutti</option>
-            </select>
-        </div>
-    </div>
+  <div>
+    <label for="campoFilter">Campo:</label>
+    <select id="campoFilter"></select>
+    <label for="giornoFilter">Giorno:</label>
+    <select id="giornoFilter"></select>
+    <label for="gironeFilter">Girone:</label>
+    <select id="gironeFilter"></select>
+  </div>
 
-    <div id="programma"></div>
+  <h2>Partite Fase a Gironi</h2>
+  <table id="partiteTable"></table>
 
-    <h2 class="text-xl font-bold mt-8">Classifiche</h2>
-    <div id="classifiche"></div>
+  <h2>Classifiche</h2>
+  <div id="classificheContainer"></div>
 
-    <h2 class="text-xl font-bold mt-8">Fase Finale</h2>
-    <div id="fase-finale" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4"></div>
+  <h2>Fase Finale</h2>
+  <table id="finaliTable"></table>
 
-    <script>
-    const programmaURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=1898554956&single=true&output=csv";
-    const finaliURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=660358441&single=true&output=csv";
-
-    const filters = { campo: '', giorno: '', girone: '' };
-    let partite = [];
-
-    function aggiornaSelect(id, values) {
-        const select = document.getElementById(id);
-        values = [...new Set(values)].sort();
-        values.forEach(v => {
-            const opt = document.createElement("option");
-            opt.value = v; opt.textContent = v;
-            select.appendChild(opt);
-        });
+  <script>
+    async function loadCSV(url) {
+      const response = await fetch(url);
+      const data = await response.text();
+      const [headerLine, ...lines] = data.trim().split('\n');
+      const headers = headerLine.split(',');
+      return lines.map(line => {
+        const values = line.split(',');
+        const row = {};
+        headers.forEach((h, i) => row[h.trim()] = values[i]?.trim() || '');
+        return row;
+      });
     }
 
-    function aggiornaFiltri() {
-        const campo = document.getElementById("campo").value;
-        const giorno = document.getElementById("giorno").value;
-        const girone = document.getElementById("girone").value;
-        filters.campo = campo; filters.giorno = giorno; filters.girone = girone;
-        mostraProgramma(); mostraClassifiche();
+    function createOptions(selectId, values) {
+      const select = document.getElementById(selectId);
+      select.innerHTML = '<option value="">Tutti</option>';
+      Array.from(new Set(values)).sort().forEach(val => {
+        const opt = document.createElement('option');
+        opt.value = val;
+        opt.textContent = val;
+        select.appendChild(opt);
+      });
     }
 
-    function mostraProgramma() {
-        const contenitore = document.getElementById("programma");
-        let html = "<table class='table-auto w-full bg-white rounded-xl overflow-hidden shadow'><thead><tr class='bg-gray-200'><th class='p-2'>Giorno</th><th>Ora</th><th>Campo</th><th>Girone</th><th>Squadra 1</th><th></th><th>Squadra 2</th></tr></thead><tbody>";
-        partite.filter(p =>
-            (!filters.campo || p.CAMPO === filters.campo) &&
-            (!filters.giorno || p.GIORNO === filters.giorno) &&
-            (!filters.girone || p.GIRONE === filters.girone)
-        ).sort((a, b) => `${a.DATA} ${a.ORA}`.localeCompare(`${b.DATA} ${b.ORA}`)).forEach(p => {
-            html += `<tr class='border-t'><td class='p-1'>${p.GIORNO}</td><td>${p.ORA}</td><td>${p.CAMPO}</td><td>${p.GIRONE}</td><td>${p.SQUADRA1}</td><td class='text-center font-bold'>${p.RISULTATO}</td><td>${p.SQUADRA2}</td></tr>`;
-        });
-        html += "</tbody></table>";
-        contenitore.innerHTML = html;
-    }
+    function mostraFinali(data) {
+      const container = document.getElementById("finaliTable");
+      const rows = data.sort((a, b) => `${a.DATA} ${a.ORA}`.localeCompare(`${b.DATA} ${b.ORA}`))
+        .map(row => {
+          let squadra1 = row.SQUADRA1;
+          let squadra2 = row.SQUADRA2;
+          let risultato = row.RISULTATO || "-";
+          let vincitore = null;
 
-    function mostraClassifiche() {
-        const contenitore = document.getElementById("classifiche");
-        const gironi = [...new Set(partite.map(p => p.GIRONE))];
-        let html = "";
-        gironi.forEach(g => {
-            if (filters.girone && filters.girone !== g) return;
-            const squadre = {};
-            partite.filter(p => p.GIRONE === g).forEach(p => {
-                const [g1, g2] = p.RISULTATO.split('-').map(n => parseInt(n));
-                if (isNaN(g1) || isNaN(g2)) return;
-                [p.SQUADRA1, p.SQUADRA2].forEach(sq => {
-                    if (!squadre[sq]) squadre[sq] = { P: 0, GF: 0, GS: 0, V: 0, N: 0, S: 0, G: 0 };
-                });
-                squadre[p.SQUADRA1].GF += g1; squadre[p.SQUADRA1].GS += g2;
-                squadre[p.SQUADRA2].GF += g2; squadre[p.SQUADRA2].GS += g1;
-                squadre[p.SQUADRA1].G++;
-                squadre[p.SQUADRA2].G++;
-                if (g1 > g2) { squadre[p.SQUADRA1].P += 3; squadre[p.SQUADRA1].V++; squadre[p.SQUADRA2].S++; }
-                else if (g1 < g2) { squadre[p.SQUADRA2].P += 3; squadre[p.SQUADRA2].V++; squadre[p.SQUADRA1].S++; }
-                else { squadre[p.SQUADRA1].P += 1; squadre[p.SQUADRA2].P += 1; squadre[p.SQUADRA1].N++; squadre[p.SQUADRA2].N++; }
-            });
-            const classifica = Object.entries(squadre).map(([s, v]) => ({ squadra: s, ...v }));
-            classifica.sort((a, b) => b.P - a.P || (b.GF - b.GS) - (a.GF - a.GS) || b.GF - a.GF);
-            html += `<h3 class='text-lg mt-4 font-semibold'>Girone ${g}</h3><table class='table-auto w-full bg-white rounded shadow overflow-hidden'><thead class='bg-green-200'><tr><th class='p-1'>Squadra</th><th>G</th><th>V</th><th>N</th><th>S</th><th>GF</th><th>GS</th><th>Punti</th></tr></thead><tbody>`;
-            classifica.forEach((s, i) => {
-                html += `<tr class='${i < 2 ? "highlight" : ""}'><td class='p-1'>${s.squadra}</td><td>${s.G}</td><td>${s.V}</td><td>${s.N}</td><td>${s.S}</td><td>${s.GF}</td><td>${s.GS}</td><td class='font-bold'>${s.P}</td></tr>`;
-            });
-            html += "</tbody></table>";
-        });
-        contenitore.innerHTML = html;
-    }
-
-    function caricaProgramma() {
-        Papa.parse(programmaURL, {
-            download: true,
-            header: true,
-            complete: function(results) {
-                partite = results.data;
-                aggiornaSelect("campo", partite.map(p => p.CAMPO));
-                aggiornaSelect("giorno", partite.map(p => p.GIORNO));
-                aggiornaSelect("girone", partite.map(p => p.GIRONE));
-                mostraProgramma();
-                mostraClassifiche();
+          if (risultato.includes("-")) {
+            const [gol1, gol2] = risultato.split("-").map(n => parseInt(n));
+            if (!isNaN(gol1) && !isNaN(gol2)) {
+              if (gol1 > gol2) vincitore = "SQUADRA1";
+              else if (gol2 > gol1) vincitore = "SQUADRA2";
             }
-        });
+          }
+
+          return `<tr>
+            <td>${row.TURNO}</td>
+            <td>${row.GIORNO}</td>
+            <td>${row.DATA}</td>
+            <td>${row.ORA}</td>
+            <td>${row.CAMPO}</td>
+            <td class="${vincitore === 'SQUADRA1' ? 'winner' : ''}">${squadra1}</td>
+            <td class="${vincitore === 'SQUADRA2' ? 'winner' : ''}">${squadra2}</td>
+            <td>${risultato}</td>
+          </tr>`;
+        }).join('');
+
+      container.innerHTML = `<tr>
+        <th>Turno</th><th>Giorno</th><th>Data</th><th>Ora</th><th>Campo</th>
+        <th>Squadra 1</th><th>Squadra 2</th><th>Risultato</th>
+      </tr>` + rows;
     }
 
-    function evidenziaVincente(s1, s2, ris) {
-        const [g1, g2] = ris.split('-').map(n => parseInt(n));
-        if (isNaN(g1) || isNaN(g2)) return [`<b>${s1}</b>`, `<b>${s2}</b>`];
-        if (g1 > g2) return [`<b>${s1}</b>`, s2];
-        if (g2 > g1) return [s1, `<b>${s2}</b>`];
-        return [s1, s2];
+    async function init() {
+      const urlGironi = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=1898554956&single=true&output=csv';
+      const urlFinali = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=660358441&single=true&output=csv';
+      const gironi = await loadCSV(urlGironi);
+      const finali = await loadCSV(urlFinali);
+
+      // Chiamata a funzioni esistenti
+      window.renderGironi(gironi);
+      mostraFinali(finali);
     }
 
-    function caricaFaseFinale() {
-        Papa.parse(finaliURL, {
-            download: true,
-            header: true,
-            complete: function(results) {
-                const partite = results.data.filter(p => p.SQUADRA1 && p.SQUADRA2);
-                let html = "";
-                partite.forEach(p => {
-                    const [sq1, sq2] = evidenziaVincente(p.SQUADRA1, p.SQUADRA2, p.RISULTATO || "");
-                    html += `
-                    <div class="bg-white shadow p-4 rounded-xl border">
-                        <div class="text-sm text-gray-500 mb-1">${p.FASE}</div>
-                        <div class="text-lg font-semibold">${p.DATA || ""} ${p.ORA || ""}</div>
-                        <div class="my-2 flex justify-between items-center text-lg">
-                            <div>${sq1}</div>
-                            <div class="font-bold">${p.RISULTATO || "-"}</div>
-                            <div>${sq2}</div>
-                        </div>
-                    </div>`;
-                });
-                document.getElementById("fase-finale").innerHTML = html;
-            }
-        });
-    }
-
-    document.getElementById("campo").addEventListener("change", aggiornaFiltri);
-    document.getElementById("giorno").addEventListener("change", aggiornaFiltri);
-    document.getElementById("girone").addEventListener("change", aggiornaFiltri);
-
-    caricaProgramma();
-    caricaFaseFinale();
-    </script>
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+  <script src="script-gironi.js"></script>
 </body>
 </html>

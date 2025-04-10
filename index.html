@@ -179,10 +179,8 @@
         if (squadre[2]) terze.push({ ...squadre[2], girone });
       }
 
-      tutteLeTerze = terze;
-      miglioriTerze = [...terze]
-        .sort((a, b) => b.punti - a.punti || b.diff - a.diff || b.gf - a.gf)
-        .slice(0, 2);
+      tutteLeTerze = [...terze].sort((a, b) => b.punti - a.punti || b.diff - a.diff || b.gf - a.gf);
+      miglioriTerze = tutteLeTerze.slice(0, 2);
     }
 
     function renderClassifiche(classifiche, gironeFilter) {

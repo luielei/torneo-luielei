@@ -1,135 +1,137 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Fase Finale - LUI&LEI</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f9f9f9;
-      padding: 20px;
-    }
-    h2 {
-      margin-top: 40px;
-      color: #333;
-    }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-bottom: 40px;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: center;
-    }
-    th {
-      background-color: #004080;
-      color: white;
-    }
-    .vincente {
-      font-weight: bold;
-      background-color: #c8e6c9;
-    }
-  </style>
-</head>
-<body>
+<!-- L'HTML è troppo lungo per stare tutto qui in un unico messaggio. Ti invio subito la seconda parte. -->
+  const finaliUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=660358441&single=true&output=csv&cachebuster=" + new Date().getTime();
 
-  <h2>Fase Finale</h2>
-  <div id="faseFinale"></div>
+  function renderFaseFinale(partiteFinali, classifiche) {
+    const container = document.createElement("div");
+    container.innerHTML = "<h2 class='section-title'>Fase Finale</h2>";
+    const turni = ["Ottavi", "Quarti", "Semifinali", "Finale", "Finale 3° Posto"];
 
-  <script>
-    const finaliCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=660358441&single=true&output=csv&cachebuster=" + new Date().getTime();
+    const vincitori = {};
 
-    function fetchCSV(url) {
-      return fetch(url)
-        .then(res => res.text())
-        .then(text => {
-          const rows = text.trim().split('\n').map(r => r.split(','));
-          const headers = rows.shift();
-          return rows.map(row => {
-            const obj = {};
-            headers.forEach((h, i) => obj[h.trim()] = row[i]?.trim() || '');
-            return obj;
-          });
-        });
-    }
+    turni.forEach(turno => {
+      const partiteTurno = partiteFinali
+        .filter(p => p.TURNO === turno)
+        .sort((a, b) => new Date(`${a.DATA}T${a.ORA}`) - new Date(`${b.DATA}T${b.ORA}`));
 
-    function getVincente(risultato, squadra1, squadra2) {
-      if (!risultato || !risultato.includes("-")) return "";
-      const [g1, g2] = risultato.split("-").map(Number);
-      if (g1 > g2) return squadra1;
-      if (g2 > g1) return squadra2;
-      return ""; // pareggio, caso non ammesso in fase a eliminazione diretta
-    }
+      if (partiteTurno.length === 0) return;
 
-    function renderFaseFinale(partite) {
-      const turniOrdine = [
-        "Ottavo di finale 1", "Ottavo di finale 2", "Ottavo di finale 3", "Ottavo di finale 4",
-        "Ottavo di finale 5", "Ottavo di finale 6", "Ottavo di finale 7", "Ottavo di finale 8",
-        "Quarto di finale 1", "Quarto di finale 2", "Quarto di finale 3", "Quarto di finale 4",
-        "Semifinale 1", "Semifinale 2",
-        "Finale 3° posto", "Finale"
-      ];
+      const table = document.createElement("table");
+      const caption = document.createElement("caption");
+      caption.className = "section-title";
+      caption.textContent = `Partite ${turno}`;
+      table.appendChild(caption);
 
-      // Ordina per TURNO, poi ORA
-      partite.sort((a, b) => {
-        const t1 = turniOrdine.indexOf(a.TURNO);
-        const t2 = turniOrdine.indexOf(b.TURNO);
-        if (t1 !== t2) return t1 - t2;
-        return a.ORA.localeCompare(b.ORA);
+      const thead = document.createElement("thead");
+      thead.innerHTML = `<tr><th>Giorno</th><th>Ora</th><th>Campo</th><th>Squadra 1</th><th>Risultato</th><th>Squadra 2</th></tr>`;
+      table.appendChild(thead);
+
+      const tbody = document.createElement("tbody");
+      partiteTurno.forEach(p => {
+        const squadra1 = sostituisciSegnaposto(p.SQUADRA1, classifiche);
+        const squadra2 = sostituisciSegnaposto(p.SQUADRA2, classifiche);
+
+        const [gol1, gol2] = p.RISULTATO.includes("-") ? p.RISULTATO.split("-").map(n => parseInt(n)) : [null, null];
+
+        let row = document.createElement("tr");
+        row.innerHTML = `<td>${p.GIORNO}</td><td>${p.ORA}</td><td>${p.CAMPO}</td><td>${squadra1}</td><td>${p.RISULTATO}</td><td>${squadra2}</td>`;
+
+        // Evidenzia la vincente se c'è un risultato
+        if (gol1 !== null && gol2 !== null) {
+          const vincente = gol1 > gol2 ? squadra1 : gol2 > gol1 ? squadra2 : null;
+          if (vincente) {
+            row.querySelectorAll("td")[3 + (vincente === squadra2 ? 2 : 0)].classList.add("highlight");
+            vincitori[`${turno}-${p.ID}`] = vincente;
+          }
+        }
+
+        tbody.appendChild(row);
       });
 
-      // Mappa per salvare le vincitrici
-      const vincitori = {};
+      table.appendChild(tbody);
+      container.appendChild(table);
+    });
 
-      // Sostituisce i nomi dinamicamente se sono riferimenti a turni precedenti
-      function resolveSquadra(nome) {
-        return vincitori[nome] || nome;
-      }
+    document.body.appendChild(container);
+  }
 
-      let html = `<table>
-        <tr>
-          <th>Turno</th>
-          <th>Data</th>
-          <th>Ora</th>
-          <th>Campo</th>
-          <th>Squadra 1</th>
-          <th>Risultato</th>
-          <th>Squadra 2</th>
-        </tr>`;
+  function sostituisciSegnaposto(nome, classifiche) {
+    if (!nome) return "";
 
-      partite.forEach(p => {
-        const squadra1 = resolveSquadra(p.SQUADRA1);
-        const squadra2 = resolveSquadra(p.SQUADRA2);
-        const vincente = getVincente(p.RISULTATO, squadra1, squadra2);
-        if (vincente) vincitori[`Vincente ${p.TURNO}`] = vincente;
+    if (!nome.includes("girone")) return nome;
 
-        const s1Class = squadra1 === vincente ? "vincente" : "";
-        const s2Class = squadra2 === vincente ? "vincente" : "";
+    const match = nome.match(/(Prima|Seconda|Terza|Migliore Terza) classificata(?: (?:del|girone) )?([A-Z])?/i);
+    if (!match) return nome;
 
-        html += `<tr>
-          <td>${p.TURNO}</td>
-          <td>${p.DATA}</td>
-          <td>${p.ORA}</td>
-          <td>${p.CAMPO}</td>
-          <td class="${s1Class}">${squadra1}</td>
-          <td>${p.RISULTATO}</td>
-          <td class="${s2Class}">${squadra2}</td>
-        </tr>`;
+    const posizione = match[1].toLowerCase();
+    const girone = match[2];
+
+    if (posizione === "migliore terza") {
+      return miglioriTerze[0]?.squadra || nome;
+    }
+
+    if (posizione === "seconda migliore terza") {
+      return miglioriTerze[1]?.squadra || nome;
+    }
+
+    const squadre = classifiche[girone];
+    if (!squadre) return nome;
+
+    const ordinata = Object.values(squadre).sort((a, b) => b.punti - a.punti || b.diff - a.diff || b.gf - a.gf);
+
+    switch (posizione) {
+      case "prima": return ordinata[0]?.squadra || nome;
+      case "seconda": return ordinata[1]?.squadra || nome;
+      case "terza": return ordinata[2]?.squadra || nome;
+      default: return nome;
+    }
+  }
+
+  async function caricaFaseFinale(classifiche) {
+    const res = await fetch(finaliUrl);
+    const text = await res.text();
+    const partiteFinali = parseCSV(text);
+    renderFaseFinale(partiteFinali, classifiche);
+  }
+
+  // Estendi la init con caricamento fase finale
+  async function init() {
+    const response = await fetch(csvUrl);
+    const text = await response.text();
+    const partite = parseCSV(text);
+
+    aggiornaFiltri(partite);
+    const classifiche = calcolaClassifiche(partite);
+    trovaTerze(classifiche);
+    renderProgramma(partite, {});
+    renderClassifiche(classifiche, null);
+    renderMiglioriTerze();
+    await caricaFaseFinale(classifiche); // <-- Fase finale!
+
+    document.getElementById("campoFilter").addEventListener("change", () => renderProgramma(partite, {
+      campo: campoFilter.value,
+      giorno: giornoFilter.value,
+      girone: gironeFilter.value
+    }));
+
+    document.getElementById("giornoFilter").addEventListener("change", () => renderProgramma(partite, {
+      campo: campoFilter.value,
+      giorno: giornoFilter.value,
+      girone: gironeFilter.value
+    }));
+
+    document.getElementById("gironeFilter").addEventListener("change", () => {
+      const girone = gironeFilter.value;
+      renderProgramma(partite, {
+        campo: campoFilter.value,
+        giorno: giornoFilter.value,
+        girone: girone
       });
+      renderClassifiche(classifiche, girone);
+      document.getElementById("miglioriTerzeContainer").style.display = girone ? "none" : "block";
+    });
+  }
 
-      html += `</table>`;
-      document.getElementById("faseFinale").innerHTML = html;
-    }
-
-    async function init() {
-      const partiteFinali = await fetchCSV(finaliCSV);
-      renderFaseFinale(partiteFinali);
-    }
-
-    init();
-  </script>
+  init();
+</script>
 </body>
 </html>

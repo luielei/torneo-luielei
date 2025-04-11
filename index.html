@@ -2,209 +2,107 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mini-Torneo LUI&LEI</title>
+  <title>Mini-Torneo Lui & Lei 2025</title>
   <style>
-    body {
-      font-family: 'Arial', sans-serif;
-      background-color: #f3f3f3;
-      margin: 0;
-      padding: 20px;
-    }
-    h1, h2 {
-      text-align: center;
-      color: #003366;
-    }
-    .filters, .table-container {
-      margin: 20px auto;
-      max-width: 1200px;
-    }
-    .filters label {
-      margin-right: 10px;
-    }
-    select {
-      margin: 0 10px;
-      padding: 5px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 40px;
-      background-color: white;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: center;
-    }
-    th {
-      background-color: #003366;
-      color: white;
-    }
-    tr:nth-child(even) {
-      background-color: #f2f2f2;
-    }
-    .highlight {
-      background-color: #d1ffd1 !important;
-    }
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    h2 { margin-top: 40px; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background-color: #f2f2f2; }
+    .first { background-color: #d1ffd1; }
+    .third-best { background-color: #ffe3a3; }
+    select { margin-bottom: 20px; }
   </style>
 </head>
 <body>
+  <h1>Mini-Torneo Lui & Lei 2025</h1>
+  <label for="gironeSelect">Seleziona girone:</label>
+  <select id="gironeSelect" onchange="filterByGirone()">
+    <option value="ALL">Tutti i gironi</option>
+    <option value="A">Girone A</option>
+    <option value="B">Girone B</option>
+    <option value="C">Girone C</option>
+    <option value="D">Girone D</option>
+    <option value="E">Girone E</option>
+    <option value="F">Girone F</option>
+    <option value="G">Girone G</option>
+  </select>
 
-<h1>Mini-Torneo LUI&LEI</h1>
+  <h2>Programma Partite</h2>
+  <table id="programmaTable"></table>
 
-<div class="filters">
-  <label for="campo">Campo:</label>
-  <select id="campo"></select>
-
-  <label for="giorno">Giorno:</label>
-  <select id="giorno"></select>
-
-  <label for="girone">Girone:</label>
-  <select id="girone"></select>
-</div>
-
-<div class="table-container">
-  <h2>Partite Fase a Gironi</h2>
-  <table id="partite"></table>
-
-  <h2>Classifiche</h2>
-  <div id="classifiche"></div>
+  <h2>Classifiche Gironi</h2>
+  <div id="classificheContainer"></div>
 
   <h2>Fase Finale</h2>
-  <table id="finali"></table>
-</div>
+  <table id="finaliTable"></table>
 
-<script>
-const CSV_GIRONI = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=1898554956&single=true&output=csv';
-const CSV_FINALI = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=660358441&single=true&output=csv';
+  <script>
+    const programma = " + JSON.stringify(programma_json) + ";
+    const finali = " + JSON.stringify(finali_json) + ";
+    const classifiche = " + JSON.stringify(classifiche_json) + ";
 
-let partite = [], finali = [];
-
-function parseCSV(text) {
-  const rows = text.trim().split('\n');
-  const headers = rows[0].replace(/^\uFEFF/, '').split(',').map(h => h.trim());
-  return rows.slice(1).map(row => {
-    const values = row.split(',');
-    return headers.reduce((obj, key, i) => {
-      obj[key.trim()] = values[i]?.trim();
-      return obj;
-    }, {});
-  });
-}
-
-function renderPartite(data) {
-  const table = document.getElementById('partite');
-  const headers = ['GIORNO', 'DATA', 'ORA', 'CAMPO', 'GIRONE', 'SQUADRA1', 'RISULTATO', 'SQUADRA2'];
-  table.innerHTML = `
-    <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
-    ${data.map(p => `<tr>
-      <td>${p.GIORNO}</td>
-      <td>${p.DATA}</td>
-      <td>${p.ORA}</td>
-      <td>${p.CAMPO}</td>
-      <td>${p.GIRONE}</td>
-      <td>${p.SQUADRA1}</td>
-      <td>${p.RISULTATO}</td>
-      <td>${p.SQUADRA2}</td>
-    </tr>`).join('')}
-  `;
-}
-
-function renderClassifiche(data) {
-  const gruppi = {};
-  data.forEach(p => {
-    if (!p.GIRONE || !p.RISULTATO.includes('-')) return;
-    const [gol1, gol2] = p.RISULTATO.split('-').map(Number);
-    if (isNaN(gol1) || isNaN(gol2)) return;
-    const squadre = [p.SQUADRA1, p.SQUADRA2];
-    const girone = p.GIRONE;
-    if (!gruppi[girone]) gruppi[girone] = {};
-    [0, 1].forEach(i => {
-      const nome = squadre[i];
-      if (!gruppi[girone][nome]) gruppi[girone][nome] = { punti: 0, gf: 0, gs: 0, giocate: 0, v: 0, n: 0, p: 0 };
-      gruppi[girone][nome].giocate++;
-      gruppi[girone][nome].gf += i === 0 ? gol1 : gol2;
-      gruppi[girone][nome].gs += i === 0 ? gol2 : gol1;
-    });
-    if (gol1 > gol2) {
-      gruppi[girone][p.SQUADRA1].punti += 3;
-      gruppi[girone][p.SQUADRA1].v++;
-      gruppi[girone][p.SQUADRA2].p++;
-    } else if (gol1 < gol2) {
-      gruppi[girone][p.SQUADRA2].punti += 3;
-      gruppi[girone][p.SQUADRA2].v++;
-      gruppi[girone][p.SQUADRA1].p++;
-    } else {
-      gruppi[girone][p.SQUADRA1].punti++;
-      gruppi[girone][p.SQUADRA2].punti++;
-      gruppi[girone][p.SQUADRA1].n++;
-      gruppi[girone][p.SQUADRA2].n++;
+    function renderProgramma(girone) {
+      const table = document.getElementById('programmaTable');
+      let html = '<tr><th>Giorno</th><th>Data</th><th>Ora</th><th>Campo</th><th>Girone</th><th>Squadra 1</th><th>Squadra 2</th><th>Risultato</th></tr>';
+      for (const match of programma) {
+        if (girone === 'ALL' || match.GIRONE === girone) {
+          html += `<tr><td>${match.GIORNO}</td><td>${match.DATA}</td><td>${match.ORA}</td><td>${match.CAMPO}</td><td>${match.GIRONE}</td><td>${match.SQUADRA1}</td><td>${match.SQUADRA2}</td><td>${match.RISULTATO}</td></tr>`;
+        }
+      }
+      table.innerHTML = html;
     }
-  });
-  const container = document.getElementById('classifiche');
-  container.innerHTML = '';
-  Object.keys(gruppi).forEach(g => {
-    const squadre = Object.entries(gruppi[g]).map(([nome, stats]) => ({ nome, ...stats }));
-    squadre.sort((a, b) => b.punti - a.punti || (b.gf - b.gs) - (a.gf - a.gs));
-    const table = document.createElement('table');
-    table.innerHTML = `<tr><th colspan="8">Girone ${g}</th></tr>
-    <tr><th>Squadra</th><th>Pt</th><th>G</th><th>V</th><th>N</th><th>P</th><th>GF</th><th>GS</th></tr>
-    ${squadre.map((s, i) => `<tr class="${i < 2 ? 'highlight' : ''}"><td>${s.nome}</td><td>${s.punti}</td><td>${s.giocate}</td><td>${s.v}</td><td>${s.n}</td><td>${s.p}</td><td>${s.gf}</td><td>${s.gs}</td></tr>`).join('')}`;
-    container.appendChild(table);
-  });
-}
 
-function renderFinali(data) {
-  const table = document.getElementById('finali');
-  const headers = ['TURNO', 'ORA', 'CAMPO', 'SQUADRA1', 'RISULTATO', 'SQUADRA2'];
-  table.innerHTML = `
-    <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
-    ${data.map(p => `<tr>
-      <td>${p.TURNO}</td>
-      <td>${p.ORA}</td>
-      <td>${p.CAMPO}</td>
-      <td>${p.SQUADRA1}</td>
-      <td>${p.RISULTATO}</td>
-      <td>${p.SQUADRA2}</td>
-    </tr>`).join('')}
-  `;
-}
+    function renderClassifiche(girone) {
+      const container = document.getElementById('classificheContainer');
+      container.innerHTML = '';
+      const gironi = [...new Set(classifiche.map(c => c.GIRONE))];
+      const terze = {};
+      for (const g of gironi) {
+        const teams = classifiche.filter(c => c.GIRONE === g);
+        if (girone !== 'ALL' && g !== girone) continue;
+        let html = `<h3>Girone ${g}</h3><table><tr><th>Squadra</th><th>Partite</th><th>Punti</th><th>Gol Fatti</th><th>Gol Subiti</th><th>Diff. Reti</th></tr>`;
+        teams.forEach((team, i) => {
+          let rowClass = '';
+          if (i === 0 || i === 1) rowClass = 'class="first"';
+          if (i === 2) terze[team.SQUADRA] = g;
+          html += `<tr ${rowClass}><td>${team.SQUADRA}</td><td>${team.Partite}</td><td>${team.Punti}</td><td>${team.GolFatti}</td><td>${team.GolSubiti}</td><td>${team.DiffReti}</td></tr>`;
+        });
+        html += '</table>';
+        container.innerHTML += html;
+      }
 
-function initFilters(data) {
-  const campoSel = document.getElementById('campo');
-  const giornoSel = document.getElementById('giorno');
-  const gironeSel = document.getElementById('girone');
-  const campi = [...new Set(data.map(p => p.CAMPO))];
-  const giorni = [...new Set(data.map(p => p.GIORNO))];
-  const gironi = [...new Set(data.map(p => p.GIRONE))];
-  campoSel.innerHTML = '<option value="">Tutti</option>' + campi.map(c => `<option value="${c}">${c}</option>`).join('');
-  giornoSel.innerHTML = '<option value="">Tutti</option>' + giorni.map(g => `<option value="${g}">${g}</option>`).join('');
-  gironeSel.innerHTML = '<option value="">Tutti</option>' + gironi.map(g => `<option value="${g}">${g}</option>`).join('');
-  campoSel.onchange = giornoSel.onchange = gironeSel.onchange = () => {
-    const fCampo = campoSel.value, fGiorno = giornoSel.value, fGirone = gironeSel.value;
-    const filtrate = partite.filter(p =>
-      (!fCampo || p.CAMPO === fCampo) &&
-      (!fGiorno || p.GIORNO === fGiorno) &&
-      (!fGirone || p.GIRONE === fGirone));
-    renderPartite(filtrate);
-    renderClassifiche(filtrate);
-  };
-}
+      // Calcolo migliori terze
+      const thirdTeams = classifiche.filter(t => Object.keys(terze).includes(t.SQUADRA));
+      const bestThirds = thirdTeams.sort((a, b) => b.Punti - a.Punti || b.DiffReti - a.DiffReti || b.GolFatti - a.GolFatti).slice(0, 2);
+      for (const team of bestThirds) {
+        const row = document.querySelectorAll(`td:contains('${team.SQUADRA}')`);
+        row.forEach(cell => {
+          const row = cell.parentElement;
+          if (!row.classList.contains('first')) row.classList.add('third-best');
+        });
+      }
+    }
 
-async function init() {
-  const [res1, res2] = await Promise.all([fetch(CSV_GIRONI), fetch(CSV_FINALI)]);
-  const [text1, text2] = await Promise.all([res1.text(), res2.text()]);
-  partite = parseCSV(text1);
-  finali = parseCSV(text2);
-  partite.sort((a,b)=>`${a.DATA} ${a.ORA}`.localeCompare(`${b.DATA} ${b.ORA}`));
-  renderPartite(partite);
-  renderClassifiche(partite);
-  renderFinali(finali);
-  initFilters(partite);
-}
+    function renderFinali() {
+      const table = document.getElementById('finaliTable');
+      let html = '<tr><th>Giorno</th><th>Data</th><th>Ora</th><th>Campo</th><th>Fase</th><th>Turno</th><th>Squadra 1</th><th>Squadra 2</th><th>Risultato</th></tr>';
+      for (const match of finali) {
+        html += `<tr><td>${match.GIORNO}</td><td>${match.DATA}</td><td>${match.ORA}</td><td>${match.CAMPO}</td><td>${match['FASE FINALE']}</td><td>${match.TURNO}</td><td>${match.SQUADRA1}</td><td>${match.SQUADRA2}</td><td>${match.RISULTATO}</td></tr>`;
+      }
+      table.innerHTML = html;
+    }
 
-init();
-</script>
+    function filterByGirone() {
+      const girone = document.getElementById('gironeSelect').value;
+      renderProgramma(girone);
+      renderClassifiche(girone);
+    }
+
+    // Inizializzazione
+    renderProgramma('ALL');
+    renderClassifiche('ALL');
+    renderFinali();
+  </script>
 </body>
 </html>

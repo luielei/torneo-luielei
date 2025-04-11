@@ -77,7 +77,7 @@
       return obj;
     });
   }
-  function renderProgramma() {
+    function renderProgramma() {
     const container = document.getElementById("programmaContainer");
     container.innerHTML = "<h2>Fase a Gironi - Programma</h2>";
     const table = document.createElement("table");
@@ -85,8 +85,17 @@
     thead.innerHTML = "<tr><th>Giorno</th><th>Data</th><th>Ora</th><th>Campo</th><th>Girone</th><th>Squadra 1</th><th>Squadra 2</th><th>Risultato</th></tr>";
     const tbody = table.createTBody();
 
+    const filtroCampo = document.getElementById("campoFilter").value;
+    const filtroGiorno = document.getElementById("giornoFilter").value;
+    const filtroGirone = document.getElementById("gironeFilter").value;
+
     partite
       .filter(p => p.GIRONE && p.GIRONE !== "")
+      .filter(p =>
+        (filtroCampo === "" || p.CAMPO === filtroCampo) &&
+        (filtroGiorno === "" || p.GIORNO === filtroGiorno) &&
+        (filtroGirone === "" || p.GIRONE === filtroGirone)
+      )
       .sort((a, b) => new Date(`${a.DATA} ${a.ORA}`) - new Date(`${b.DATA} ${b.ORA}`))
       .forEach(p => {
         const tr = tbody.insertRow();
@@ -98,76 +107,19 @@
         tr.insertCell().textContent = p.SQUADRA1;
         tr.insertCell().textContent = p.SQUADRA2;
         tr.insertCell().textContent = p.RISULTATO;
-        gironi.add(p.GIRONE);
       });
 
     container.appendChild(table);
-  }
-
-  function calcolaClassifiche() {
-    classifiche = {};
-    const punti = {};
-    const differenzeReti = {};
-    const golFatti = {};
-    const partiteGiocate = {};
-
-    partite.forEach(p => {
-      const girone = p.GIRONE;
-      if (!girone) return;
-      classifiche[girone] ??= {};
-      punti[girone] ??= {};
-      differenzeReti[girone] ??= {};
-      golFatti[girone] ??= {};
-      partiteGiocate[girone] ??= {};
-
-      const s1 = p.SQUADRA1, s2 = p.SQUADRA2;
-      if (!s1 || !s2 || !p.RISULTATO.includes("-")) return;
-
-      const [g1, g2] = p.RISULTATO.split("-").map(Number);
-
-      [s1, s2].forEach(s => {
-        classifiche[girone][s] ??= { punti: 0, gf: 0, gs: 0, partite: 0, vinte: 0, pari: 0, perse: 0 };
-      });
-
-      classifiche[girone][s1].gf += g1;
-      classifiche[girone][s1].gs += g2;
-      classifiche[girone][s1].partite++;
-      classifiche[girone][s2].gf += g2;
-      classifiche[girone][s2].gs += g1;
-      classifiche[girone][s2].partite++;
-
-      if (g1 > g2) { classifiche[girone][s1].punti += 3; classifiche[girone][s1].vinte++; classifiche[girone][s2].perse++; }
-      else if (g1 < g2) { classifiche[girone][s2].punti += 3; classifiche[girone][s2].vinte++; classifiche[girone][s1].perse++; }
-      else { classifiche[girone][s1].punti += 1; classifiche[girone][s2].punti += 1; classifiche[girone][s1].pari++; classifiche[girone][s2].pari++; }
-    });
-
-    // Calcola migliori terze
-    const terze = [];
-    Object.entries(classifiche).forEach(([girone, squadre]) => {
-      const classifica = Object.entries(squadre).map(([squadra, stat]) => {
-        return {
-          squadra,
-          girone,
-          punti: stat.punti,
-          diff: stat.gf - stat.gs,
-          gf: stat.gf
-        };
-      }).sort((a, b) =>
-        b.punti - a.punti || b.diff - a.diff || b.gf - a.gf
-      );
-      if (classifica[2]) terze.push(classifica[2]);
-    });
-
-    miglioriTerze = terze.sort((a, b) =>
-      b.punti - a.punti || b.diff - a.diff || b.gf - a.gf
-    );
   }
 
   function renderClassifiche() {
     const container = document.getElementById("classificheContainer");
     container.innerHTML = "<h2>Classifiche per Girone</h2>";
 
-    Array.from(gironi).sort().forEach(girone => {
+    const filtroGirone = document.getElementById("gironeFilter").value;
+    const gironiDaMostrare = filtroGirone ? [filtroGirone] : Array.from(gironi).sort();
+
+    gironiDaMostrare.forEach(girone => {
       const squadre = classifiche[girone];
       if (!squadre) return;
 
@@ -214,7 +166,12 @@
   }
 
   function renderMiglioriTerze() {
+    const filtroGirone = document.getElementById("gironeFilter").value;
     const container = document.getElementById("terzeClassificateContainer");
+    container.innerHTML = "";
+
+    if (filtroGirone) return; // non mostrare se è filtrato un girone
+
     container.innerHTML = "<h2>Classifica delle Terze Classificate</h2>";
     const table = document.createElement("table");
     table.innerHTML = "<tr><th>Squadra</th><th>Girone</th><th>Pt</th><th>DR</th><th>GF</th></tr>";
@@ -228,48 +185,6 @@
       tr.insertCell().textContent = s.gf;
       if (idx < 2) tr.classList.add("highlight");
     });
-
-    container.appendChild(table);
-  }
-
-  function renderFaseFinale(partiteFinali) {
-    const container = document.getElementById("faseFinaleContainer");
-    container.innerHTML = "<h2>Fase Finale</h2>";
-    const table = document.createElement("table");
-    table.innerHTML = "<tr><th>Turno</th><th>Data</th><th>Ora</th><th>Campo</th><th>Squadra 1</th><th>Squadra 2</th><th>Risultato</th></tr>";
-
-    const qualificati = {};
-    Object.entries(classifiche).forEach(([girone, squadre]) => {
-      const sorted = Object.entries(squadre).map(([squadra, stat]) => ({
-        squadra,
-        punti: stat.punti,
-        dr: stat.gf - stat.gs,
-        gf: stat.gf
-      })).sort((a, b) =>
-        b.punti - a.punti || b.dr - a.dr || b.gf - a.gf
-      );
-      if (sorted[0]) qualificati[`1${girone}`] = sorted[0].squadra;
-      if (sorted[1]) qualificati[`2${girone}`] = sorted[1].squadra;
-    });
-
-    miglioriTerze.forEach((s, i) => {
-      if (i < 2) qualificati[`${i + 1}3`] = s.squadra;
-    });
-
-    partiteFinali.sort((a, b) => new Date(`${a.DATA} ${a.ORA}`) - new Date(`${b.DATA} ${b.ORA}`))
-      .forEach(p => {
-        const tr = table.insertRow();
-        tr.insertCell().textContent = p.TURNO;
-        tr.insertCell().textContent = p.DATA;
-        tr.insertCell().textContent = p.ORA;
-        tr.insertCell().textContent = p.CAMPO;
-
-        const s1 = qualificati[p.SQUADRA1?.trim()] || p.SQUADRA1;
-        const s2 = qualificati[p.SQUADRA2?.trim()] || p.SQUADRA2;
-        tr.insertCell().textContent = s1;
-        tr.insertCell().textContent = s2;
-        tr.insertCell().textContent = p.RISULTATO;
-      });
 
     container.appendChild(table);
   }
@@ -300,3 +215,4 @@
 </script>
 </body>
 </html>
+

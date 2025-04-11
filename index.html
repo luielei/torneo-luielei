@@ -38,9 +38,9 @@
   <table id="finaliTable"></table>
 
   <script>
-    const programma = " + JSON.stringify(programma_json) + ";
-    const finali = " + JSON.stringify(finali_json) + ";
-    const classifiche = " + JSON.stringify(classifiche_json) + ";
+    const programma = JSON.parse(`" + JSON.stringify(programma_json).replace(/`/g, '\`') + "`);
+    const finali = JSON.parse(`" + JSON.stringify(finali_json).replace(/`/g, '\`') + "`);
+    const classifiche = JSON.parse(`" + JSON.stringify(classifiche_json).replace(/`/g, '\`') + "`);
 
     function renderProgramma(girone) {
       const table = document.getElementById('programmaTable');
@@ -72,15 +72,15 @@
         container.innerHTML += html;
       }
 
-      // Calcolo migliori terze
       const thirdTeams = classifiche.filter(t => Object.keys(terze).includes(t.SQUADRA));
       const bestThirds = thirdTeams.sort((a, b) => b.Punti - a.Punti || b.DiffReti - a.DiffReti || b.GolFatti - a.GolFatti).slice(0, 2);
       for (const team of bestThirds) {
-        const row = document.querySelectorAll(`td:contains('${team.SQUADRA}')`);
-        row.forEach(cell => {
-          const row = cell.parentElement;
-          if (!row.classList.contains('first')) row.classList.add('third-best');
-        });
+        const rows = document.querySelectorAll('table tr');
+        for (const row of rows) {
+          if (row.innerText.includes(team.SQUADRA)) {
+            if (!row.classList.contains('first')) row.classList.add('third-best');
+          }
+        }
       }
     }
 
@@ -99,7 +99,6 @@
       renderClassifiche(girone);
     }
 
-    // Inizializzazione
     renderProgramma('ALL');
     renderClassifiche('ALL');
     renderFinali();

@@ -49,6 +49,8 @@
     async function loadData() {
       const programma = await loadCSV('https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=1898554956&single=true&output=csv');
       const finali = await loadCSV('https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=660358441&single=true&output=csv');
+      programma.sort((a, b) => (a.DATA + a.ORA).localeCompare(b.DATA + b.ORA));
+      finali.sort((a, b) => (a.DATA + a.ORA).localeCompare(b.DATA + b.ORA));
       renderProgramma(programma, 'ALL');
       renderClassifiche(programma, 'ALL');
       renderFinali(finali);
@@ -70,7 +72,9 @@
       const stats = {};
       for (const match of programma) {
         const girone = match.GIRONE;
-        const [gf1, gf2] = (match.RISULTATO || '').split('-').map(Number);
+        const risultato = match.RISULTATO || '';
+        if (!risultato.includes('-')) continue;
+        const [gf1, gf2] = risultato.split('-').map(s => parseInt(s.trim()));
         if (isNaN(gf1) || isNaN(gf2)) continue;
         const [s1, s2] = [match.SQUADRA1, match.SQUADRA2];
         for (const [team, gf, gs, pt] of [[s1, gf1, gf2, gf1 > gf2 ? 3 : gf1 === gf2 ? 1 : 0], [s2, gf2, gf1, gf2 > gf1 ? 3 : gf1 === gf2 ? 1 : 0]]) {

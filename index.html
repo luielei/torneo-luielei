@@ -38,11 +38,24 @@
   <table id="finaliTable"></table>
 
   <script>
-    const programma = JSON.parse(`" + JSON.stringify(programma_json).replace(/`/g, '\`') + "`);
-    const finali = JSON.parse(`" + JSON.stringify(finali_json).replace(/`/g, '\`') + "`);
-    const classifiche = JSON.parse(`" + JSON.stringify(classifiche_json).replace(/`/g, '\`') + "`);
+    async function loadCSV(url) {
+      const response = await fetch(url);
+      const text = await response.text();
+      const rows = text.trim().split('\n').map(row => row.split(','));
+      const headers = rows[0];
+      return rows.slice(1).map(row => Object.fromEntries(row.map((cell, i) => [headers[i], cell])));
+    }
 
-    function renderProgramma(girone) {
+    async function loadData() {
+      const programma = await loadCSV('https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=1898554956&single=true&output=csv');
+      const finali = await loadCSV('https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=660358441&single=true&output=csv');
+      renderProgramma(programma, 'ALL');
+      renderClassifiche(programma, 'ALL');
+      renderFinali(finali);
+      window.datiProgramma = programma;
+    }
+
+    function renderProgramma(programma, girone) {
       const table = document.getElementById('programmaTable');
       let html = '<tr><th>Giorno</th><th>Data</th><th>Ora</th><th>Campo</th><th>Girone</th><th>Squadra 1</th><th>Squadra 2</th><th>Risultato</th></tr>';
       for (const match of programma) {
@@ -53,7 +66,37 @@
       table.innerHTML = html;
     }
 
-    function renderClassifiche(girone) {
+    function computeClassifiche(programma) {
+      const stats = {};
+      for (const match of programma) {
+        const girone = match.GIRONE;
+        const [gf1, gf2] = (match.RISULTATO || '').split('-').map(Number);
+        if (isNaN(gf1) || isNaN(gf2)) continue;
+        const [s1, s2] = [match.SQUADRA1, match.SQUADRA2];
+        for (const [team, gf, gs, pt] of [[s1, gf1, gf2, gf1 > gf2 ? 3 : gf1 === gf2 ? 1 : 0], [s2, gf2, gf1, gf2 > gf1 ? 3 : gf1 === gf2 ? 1 : 0]]) {
+          stats[girone] = stats[girone] || {};
+          stats[girone][team] = stats[girone][team] || { Squadra: team, Partite: 0, Punti: 0, GolFatti: 0, GolSubiti: 0 };
+          const rec = stats[girone][team];
+          rec.Partite += 1;
+          rec.Punti += pt;
+          rec.GolFatti += gf;
+          rec.GolSubiti += gs;
+        }
+      }
+      const out = [];
+      for (const girone in stats) {
+        for (const team in stats[girone]) {
+          const rec = stats[girone][team];
+          rec.GIRONE = girone;
+          rec.DiffReti = rec.GolFatti - rec.GolSubiti;
+          out.push(rec);
+        }
+      }
+      return out.sort((a, b) => a.GIRONE.localeCompare(b.GIRONE) || b.Punti - a.Punti || b.DiffReti - a.DiffReti || b.GolFatti - a.GolFatti);
+    }
+
+    function renderClassifiche(programma, girone) {
+      const classifiche = computeClassifiche(programma);
       const container = document.getElementById('classificheContainer');
       container.innerHTML = '';
       const gironi = [...new Set(classifiche.map(c => c.GIRONE))];
@@ -65,26 +108,25 @@
         teams.forEach((team, i) => {
           let rowClass = '';
           if (i === 0 || i === 1) rowClass = 'class="first"';
-          if (i === 2) terze[team.SQUADRA] = g;
-          html += `<tr ${rowClass}><td>${team.SQUADRA}</td><td>${team.Partite}</td><td>${team.Punti}</td><td>${team.GolFatti}</td><td>${team.GolSubiti}</td><td>${team.DiffReti}</td></tr>`;
+          if (i === 2) terze[team.Squadra] = g;
+          html += `<tr ${rowClass}><td>${team.Squadra}</td><td>${team.Partite}</td><td>${team.Punti}</td><td>${team.GolFatti}</td><td>${team.GolSubiti}</td><td>${team.DiffReti}</td></tr>`;
         });
         html += '</table>';
         container.innerHTML += html;
       }
-
-      const thirdTeams = classifiche.filter(t => Object.keys(terze).includes(t.SQUADRA));
+      const thirdTeams = classifiche.filter(t => Object.keys(terze).includes(t.Squadra));
       const bestThirds = thirdTeams.sort((a, b) => b.Punti - a.Punti || b.DiffReti - a.DiffReti || b.GolFatti - a.GolFatti).slice(0, 2);
       for (const team of bestThirds) {
         const rows = document.querySelectorAll('table tr');
         for (const row of rows) {
-          if (row.innerText.includes(team.SQUADRA)) {
+          if (row.innerText.includes(team.Squadra)) {
             if (!row.classList.contains('first')) row.classList.add('third-best');
           }
         }
       }
     }
 
-    function renderFinali() {
+    function renderFinali(finali) {
       const table = document.getElementById('finaliTable');
       let html = '<tr><th>Giorno</th><th>Data</th><th>Ora</th><th>Campo</th><th>Fase</th><th>Turno</th><th>Squadra 1</th><th>Squadra 2</th><th>Risultato</th></tr>';
       for (const match of finali) {
@@ -95,13 +137,11 @@
 
     function filterByGirone() {
       const girone = document.getElementById('gironeSelect').value;
-      renderProgramma(girone);
-      renderClassifiche(girone);
+      renderProgramma(window.datiProgramma, girone);
+      renderClassifiche(window.datiProgramma, girone);
     }
 
-    renderProgramma('ALL');
-    renderClassifiche('ALL');
-    renderFinali();
+    loadData();
   </script>
 </body>
 </html>

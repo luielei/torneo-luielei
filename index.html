@@ -38,15 +38,17 @@
   <table id="finaliTable"></table>
 
   <script>
-    async function fetchSheet(tabId) {
-      const res = await fetch(`https://v1.nocodeapi.com/luielei/google_sheets/ClJJPYfLEpPLHyJT?tabId=${tabId}`);
-      const json = await res.json();
-      return json.data;
+    async function loadCSV(url) {
+      const response = await fetch(url);
+      const text = await response.text();
+      const rows = text.trim().split('\n').map(row => row.split(','));
+      const headers = rows[0];
+      return rows.slice(1).map(row => Object.fromEntries(row.map((cell, i) => [headers[i], cell])));
     }
 
     async function init() {
-      const programma = await fetchSheet('Programma');
-      const finali = await fetchSheet('Finali');
+      const programma = await loadCSV('https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=1898554956&single=true&output=csv');
+      const finali = await loadCSV('https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=660358441&single=true&output=csv');
       programma.sort((a, b) => (a.DATA + a.ORA).localeCompare(b.DATA + b.ORA));
       finali.sort((a, b) => (a.DATA + a.ORA).localeCompare(b.DATA + b.ORA));
       window.datiProgramma = programma;

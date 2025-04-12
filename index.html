@@ -7,20 +7,75 @@
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 1em; background: #f8f8f8; }
-    h1, h2, h3 { color: #222; }
-    .container { max-width: 1200px; margin: auto; }
-    table { width: 100%; border-collapse: collapse; margin: 1em 0; background: white; }
-    th, td { border: 1px solid #ccc; padding: 0.5em; text-align: center; }
-    th { background: #eee; }
-    .highlight { background-color: #d4edda; font-weight: bold; }
-    .third-highlight { background-color: #ffeeba; font-weight: bold; }
-    .filter { margin: 1em 0; }
-    @media screen and (max-width: 768px) {
-      table, thead, tbody, th, td, tr { display: block; }
-      th { position: absolute; top: -9999px; left: -9999px; }
-      td { border: none; position: relative; padding-left: 50%; }
-      td:before { position: absolute; top: 0; left: 6px; white-space: nowrap; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 1em;
+      background: #f8f8f8;
+      color: #222;
+    }
+
+    h1, h2, h3 {
+      color: #222;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: auto;
+      padding: 0 1em;
+    }
+
+    .filter {
+      margin: 1em 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1em 0;
+      background: white;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 0.5em;
+      text-align: center;
+    }
+
+    th {
+      background: #eee;
+    }
+
+    .highlight {
+      background-color: #d4edda;
+      font-weight: bold;
+    }
+
+    .third-highlight {
+      background-color: #ffeeba;
+      font-weight: bold;
+    }
+
+    /* MOBILE: Tabelle scrollabili */
+    .table-container {
+      overflow-x: auto;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 0.5em;
+      }
+
+      .filter label, .filter select {
+        display: block;
+        width: 100%;
+        margin-bottom: 0.5em;
+      }
+
+      th, td {
+        font-size: 0.9em;
+        padding: 0.4em;
+      }
     }
   </style>
 </head>
@@ -52,17 +107,17 @@
 
     <div id="contenutoGironi">
       <h2>Programma Fase a Gironi</h2>
-      <div id="programma"></div>
+      <div class="table-container"><div id="programma"></div></div>
 
       <h2>Classifiche Gironi</h2>
-      <div id="classifiche"></div>
+      <div class="table-container"><div id="classifiche"></div></div>
 
       <h2 id="titoloTerze">Migliori Terze Classificate</h2>
-      <div id="terze"></div>
+      <div class="table-container"><div id="terze"></div></div>
     </div>
 
     <h2 id="titoloFinali">Fase Finale</h2>
-    <div id="finali"></div>
+    <div class="table-container"><div id="finali"></div></div>
   </div>
 
   <script>

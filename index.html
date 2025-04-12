@@ -1,151 +1,143 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mini-Torneo Lui & Lei 2025</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini-Torneo LUI & LEI 2025</title>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      font-family: 'Russo One', sans-serif;
-      background: linear-gradient(135deg, #0099ff 0%, #00ffcc 100%);
-      color: #fff;
-      padding: 20px;
+      font-family: Arial, sans-serif;
+      margin: 1rem;
+      background-color: #f8f8f8;
+      color: #333;
     }
     h1, h2 {
       text-align: center;
-      text-transform: uppercase;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 40px;
+      margin: 1rem 0;
     }
     th, td {
-      padding: 8px;
+      border: 1px solid #ccc;
+      padding: 0.5rem;
       text-align: center;
-      border: 1px solid #ffffff33;
     }
     th {
-      background-color: #004466;
+      background-color: #eee;
     }
-    tr:nth-child(even) {
-      background-color: #ffffff22;
+    .highlight-1 {
+      background-color: #c8e6c9;
+      font-weight: bold;
     }
-    .qualificata {
-      background-color: #28a745 !important;
-      color: #fff;
+    .highlight-2 {
+      background-color: #fff9c4;
+      font-weight: bold;
     }
-    .migliore-terza {
-      background-color: #ffc107 !important;
-      color: #000;
+    .filters {
+      text-align: center;
+      margin: 1rem 0;
     }
     select {
-      padding: 10px;
-      font-size: 16px;
-      margin-bottom: 20px;
+      padding: 0.5rem;
+      font-size: 1rem;
     }
-    .hidden {
-      display: none;
+    .responsive-table {
+      overflow-x: auto;
     }
   </style>
 </head>
 <body>
-  <h1>Mini-Torneo Lui & Lei 2025 03</h1>
-  <h2>Programma e Classifiche</h2>
+  <h1>Mini-Torneo di Calcio LUI & LEI 2025</h1>
+  <div class="filters">
+    <label for="gironeSelect">Filtra per girone:</label>
+    <select id="gironeSelect" onchange="filterByGirone()">
+      <option value="">Tutti</option>
+      <option value="A">Girone A</option>
+      <option value="B">Girone B</option>
+      <option value="C">Girone C</option>
+      <option value="D">Girone D</option>
+      <option value="E">Girone E</option>
+      <option value="F">Girone F</option>
+      <option value="G">Girone G</option>
+    </select>
+  </div>
 
-  <div id="programma"></div>
-  <div id="classifiche"></div>
-  <div id="classifica-terze"></div>
-  <div id="finali"></div>
+  <h2>Fase a Gironi</h2>
+  <div id="programmaContainer" class="responsive-table"></div>
+  <h2>Classifiche dei Gironi</h2>
+  <div id="classificheContainer" class="responsive-table"></div>
+  <h2>Classifica Migliori Terze</h2>
+  <div id="terzeContainer" class="responsive-table"></div>
+  <h2>Fase Finale</h2>
+  <div id="finaliContainer" class="responsive-table"></div>
 
   <script>
-    const programmaCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=1898554956&single=true&output=csv';
-    const finaliCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=660358441&single=true&output=csv';
+    const programmaURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=1898554956&single=true&output=csv";
+    const finaliURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=660358441&single=true&output=csv";
 
-    async function caricaCSV(url) {
-      const res = await fetch(url);
-      const text = await res.text();
-      const righe = text.trim().split('\n').map(r => r.split(','));
-      const header = righe[0];
-      const dati = righe.slice(1).map(r => Object.fromEntries(header.map((k, i) => [k, r[i] ?? ''])));
-      return dati;
+    let programmaData = [];
+    let classifiche = {};
+    let miglioriTerze = [];
+
+    Papa.parse(programmaURL, {
+      download: true,
+      header: true,
+      complete: function(results) {
+        programmaData = results.data.filter(r => r["DATA"]);
+        generaProgramma();
+        calcolaClassifiche();
+      }
+    });
+
+    Papa.parse(finaliURL, {
+      download: true,
+      header: true,
+      complete: function(results) {
+        const finaliData = results.data.filter(r => r["DATA"]);
+        generaFinali(finaliData);
+      }
+    });
+
+    function generaProgramma() {
+      const container = document.getElementById("programmaContainer");
+      let html = "<table><thead><tr><th>Giorno</th><th>Data</th><th>Ora</th><th>Campo</th><th>Girone</th><th>Squadra 1</th><th>Risultato</th><th>Squadra 2</th></tr></thead><tbody>";
+      programmaData.forEach(p => {
+        html += `<tr data-girone="${p["GIRONE"]}"><td>${p["GIORNO"]}</td><td>${p["DATA"]}</td><td>${p["ORA"]}</td><td>${p["CAMPO"]}</td><td>${p["GIRONE"]}</td><td>${p["SQUADRA1"]}</td><td>${p["RISULTATO"]}</td><td>${p["SQUADRA2"]}</td></tr>`;
+      });
+      html += "</tbody></table>";
+      container.innerHTML = html;
     }
 
-    function creaTabella(titolo, intestazioni, righe, id = '') {
-      let html = `<h2>${titolo}</h2><table id="${id}"><thead><tr>`;
-      intestazioni.forEach(i => html += `<th>${i}</th>`);
-      html += '</tr></thead><tbody>';
-      righe.forEach((r, idx) => {
-        const classi = r._classe || '';
-        html += `<tr class="${classi}">` + intestazioni.map(i => `<td>${r[i]}</td>`).join('') + '</tr>';
+    function generaFinali(finaliData) {
+      const container = document.getElementById("finaliContainer");
+      let html = "<table><thead><tr><th>Giorno</th><th>Data</th><th>Ora</th><th>Campo</th><th>Fase</th><th>Turno</th><th>Squadra 1</th><th>Risultato</th><th>Squadra 2</th></tr></thead><tbody>";
+      finaliData.forEach(f => {
+        html += `<tr><td>${f["GIORNO"]}</td><td>${f["DATA"]}</td><td>${f["ORA"]}</td><td>${f["CAMPO"]}</td><td>${f["FASE FINALE"]}</td><td>${f["TURNO"]}</td><td>${f["SQUADRA1"]}</td><td>${f["RISULTATO"]}</td><td>${f["SQUADRA2"]}</td></tr>`;
       });
-      html += '</tbody></table>';
-      return html;
+      html += "</tbody></table>";
+      container.innerHTML = html;
     }
 
-    async function main() {
-      const partite = await caricaCSV(programmaCSV);
-      const finali = await caricaCSV(finaliCSV);
-
-      // Ordina le partite per data e ora (globale, non per girone)
-      partite.sort((a, b) => {
-        const dateA = new Date(`${a.DATA}T${a.ORA}`);
-        const dateB = new Date(`${b.DATA}T${b.ORA}`);
-        return dateA - dateB;
+    function filterByGirone() {
+      const girone = document.getElementById("gironeSelect").value;
+      document.querySelectorAll("#programmaContainer table tbody tr").forEach(row => {
+        if (!girone || row.dataset.girone === girone) {
+          row.style.display = "";
+        } else {
+          row.style.display = "none";
+        }
       });
-
-      const programmaDiv = document.getElementById('programma');
-      const programmaHTML = creaTabella(`Programma globale`, ['GIORNO', 'DATA', 'ORA', 'CAMPO', 'GIRONE', 'SQUADRA1', 'SQUADRA2', 'RISULTATO'], partite);
-      programmaDiv.innerHTML = programmaHTML;
-
-      const gironi = [...new Set(partite.map(p => p.GIRONE))].sort();
-
-      const classificaDiv = document.getElementById('classifiche');
-      const terze = [];
-
-      gironi.forEach(g => {
-        const squadre = [...new Set(partite.filter(p => p.GIRONE === g).flatMap(p => [p.SQUADRA1, p.SQUADRA2]))];
-        const classifica = squadre.map(nome => ({ Squadra: nome, Punti: 0, GF: 0, GS: 0, PG: 0 }));
-        partite.filter(p => p.GIRONE === g && p.RISULTATO.includes('-')).forEach(p => {
-          const [gol1, gol2] = p.RISULTATO.split('-').map(e => parseInt(e.trim()));
-          if (isNaN(gol1) || isNaN(gol2)) return;
-          const s1 = classifica.find(s => s.Squadra === p.SQUADRA1);
-          const s2 = classifica.find(s => s.Squadra === p.SQUADRA2);
-          s1.GF += gol1; s1.GS += gol2; s1.PG++;
-          s2.GF += gol2; s2.GS += gol1; s2.PG++;
-          if (gol1 > gol2) s1.Punti += 3;
-          else if (gol2 > gol1) s2.Punti += 3;
-          else { s1.Punti += 1; s2.Punti += 1; }
-        });
-        classifica.forEach(s => s.DR = s.GF - s.GS);
-        classifica.sort((a, b) => b.Punti - a.Punti || b.DR - a.DR || b.GF - a.GF);
-        classifica.forEach((s, i) => {
-          if (i === 0 || i === 1) s._classe = 'qualificata';
-          if (i === 2) terze.push({...s, girone: g});
-        });
-        const html = creaTabella(`Classifica Girone ${g}`, ['Squadra', 'Punti', 'PG', 'GF', 'GS', 'DR'], classifica, `classifica-${g}`);
-        const wrapper = document.createElement('div');
-        wrapper.innerHTML = html;
-        classificaDiv.appendChild(wrapper);
-      });
-
-      // Classifica migliori terze
-      terze.sort((a, b) => b.Punti - a.Punti || b.DR - a.DR || b.GF - a.GF);
-      terze.forEach((t, i) => {
-        if (i < 2) t._classe = 'migliore-terza';
-      });
-      const terzeHTML = creaTabella('Classifica migliori terze classificate', ['Squadra', 'Punti', 'PG', 'GF', 'GS', 'DR', 'girone'], terze);
-      document.getElementById('classifica-terze').innerHTML = terzeHTML;
-
-      const finaliDiv = document.getElementById('finali');
-      const finaliHTML = creaTabella('Fase Finale', ['DATA', 'ORA', 'CAMPO', 'TURNO', 'SQUADRA1', 'SQUADRA2', 'RISULTATO'], finali);
-      finaliDiv.innerHTML = finaliHTML;
     }
 
-    main();
+    function calcolaClassifiche() {
+      // Placeholder: da completare se desideri visualizzare classifiche reali calcolate da risultati
+      document.getElementById("classificheContainer").innerHTML = "<p>(Classifiche dinamiche da implementare)</p>";
+      document.getElementById("terzeContainer").innerHTML = "<p>(Classifica migliori terze da implementare)</p>";
+    }
   </script>
 </body>
 </html>

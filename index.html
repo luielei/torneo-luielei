@@ -47,13 +47,6 @@
     <label for="gironeSelect">Seleziona Girone:</label>
     <select id="gironeSelect">
       <option value="ALL">Tutti</option>
-      <option value="A">Girone A</option>
-      <option value="B">Girone B</option>
-      <option value="C">Girone C</option>
-      <option value="D">Girone D</option>
-      <option value="E">Girone E</option>
-      <option value="F">Girone F</option>
-      <option value="G">Girone G</option>
     </select>
   </div>
 
@@ -86,6 +79,7 @@
       const programma = await fetchCSV(programmaUrl);
       const finali = await fetchCSV(finaliUrl);
 
+      updateGironeFilter(programma);
       displayProgramma(programma, gironeFilter);
       displayClassifiche(programma, gironeFilter);
       displayMiglioriTerze();
@@ -101,6 +95,12 @@
           error: err => reject(err)
         });
       });
+    }
+
+    function updateGironeFilter(dati) {
+      const select = document.getElementById("gironeSelect");
+      const gironi = [...new Set(dati.map(p => p.GIRONE))].sort();
+      select.innerHTML = '<option value="ALL">Tutti</option>' + gironi.map(g => `<option value="${g}">Girone ${g}</option>`).join('');
     }
 
     function displayProgramma(dati, filtro) {
@@ -153,23 +153,26 @@
         const classArray = Object.entries(classifica).map(([squadra, stats]) => ({ squadra, ...stats }));
         classArray.sort((a, b) => b.punti - a.punti || (b.gf - b.gs) - (a.gf - a.gs) || b.gf - a.gf);
         gironiData[girone] = classArray;
+      }
 
+      // Calcolo classifica terze
+      const terze = Object.entries(gironiData).map(([girone, classifica]) => classifica[2]).filter(Boolean);
+      terze.sort((a, b) => b.punti - a.punti || (b.gf - b.gs) - (a.gf - a.gs) || b.gf - a.gf);
+      miglioriTerzeGlobal = terze;
+
+      for (const girone of gironi) {
+        const classArray = gironiData[girone];
         const html = [`<h3>Girone ${girone}</h3><table><thead><tr><th>Squadra</th><th>Giocate</th><th>Punti</th><th>GF</th><th>GS</th><th>DR</th></tr></thead><tbody>`];
         classArray.forEach((entry, index) => {
           const dr = entry.gf - entry.gs;
           let cls = "";
           if (index < 2) cls = "highlight";
-          else if (miglioriTerzeGlobal.find(t => t.squadra === entry.squadra)) cls = "best-third";
+          if (miglioriTerzeGlobal.slice(0, 2).find(t => t.squadra === entry.squadra)) cls = "best-third";
           html.push(`<tr class="${cls}"><td>${entry.squadra}</td><td>${entry.giocate}</td><td>${entry.punti}</td><td>${entry.gf}</td><td>${entry.gs}</td><td>${dr}</td></tr>`);
         });
         html.push("</tbody></table>");
         container.innerHTML += html.join("");
       }
-
-      // Dopo tutte le classifiche, aggiorna la classifica delle terze
-      const terze = Object.entries(gironiData).map(([girone, classifica]) => classifica[2]).filter(Boolean);
-      terze.sort((a, b) => b.punti - a.punti || (b.gf - b.gs) - (a.gf - a.gs) || b.gf - a.gf);
-      miglioriTerzeGlobal = terze.slice(0, 2);
     }
 
     function displayMiglioriTerze() {
@@ -177,9 +180,10 @@
       if (miglioriTerzeGlobal.length === 0) return container.innerHTML = "<p>Calcolo in corso...</p>";
 
       const html = ["<table><thead><tr><th>Squadra</th><th>Punti</th><th>GF</th><th>GS</th><th>DR</th></tr></thead><tbody>"];
-      miglioriTerzeGlobal.forEach(entry => {
+      miglioriTerzeGlobal.forEach((entry, index) => {
         const dr = entry.gf - entry.gs;
-        html.push(`<tr class="best-third"><td>${entry.squadra}</td><td>${entry.punti}</td><td>${entry.gf}</td><td>${entry.gs}</td><td>${dr}</td></tr>`);
+        const cls = index < 2 ? "best-third" : "";
+        html.push(`<tr class="${cls}"><td>${entry.squadra}</td><td>${entry.punti}</td><td>${entry.gf}</td><td>${entry.gs}</td><td>${dr}</td></tr>`);
       });
       html.push("</tbody></table>");
       container.innerHTML = html.join("");

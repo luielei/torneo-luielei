@@ -36,7 +36,11 @@
 
     let gironiData = {}, miglioriTerzeGlobal = [];
 
-    document.getElementById("gironeSelect").addEventListener("change", loadData);
+    document.getElementById("gironeSelect").addEventListener("change", () => {
+  const select = document.getElementById("gironeSelect");
+  select.blur(); // forza l'uscita dal focus per aggiornare anche se selezioni di nuovo "Tutti"
+  loadData();
+});
 
     async function loadData() {
       const filtro = document.getElementById("gironeSelect").value;
@@ -113,7 +117,7 @@
           const dr = t.gf - t.gs;
           let cls = "";
           if (i < 2) cls = "highlight";
-          else if (topTwo.includes(t.squadra)) cls = "best-third";
+          if (topTwo.includes(t.squadra)) cls = "best-third";
           return `<tr class="${cls}"><td>${t.squadra}</td><td>${t.giocate}</td><td>${t.punti}</td><td>${t.gf}</td><td>${t.gs}</td><td>${dr}</td></tr>`;
         }).join('');
         div.innerHTML += `<h3>Girone ${g}</h3><table><thead><tr><th>Squadra</th><th>Giocate</th><th>Punti</th><th>GF</th><th>GS</th><th>DR</th></tr></thead><tbody>${rows}</tbody></table>`;

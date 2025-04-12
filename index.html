@@ -49,10 +49,34 @@
     <div id="classifiche"></div>
 
     <h2>Migliori Terze Classificate</h2>
-    <div id="terze"></div>
+    <div id="terzeFilterContainer" class="filter">
+  <label for="terzeFilter">Filtra per girone:</label>
+  <select id="terzeFilter" onchange="mostraTerze()">
+    <option value="">Tutti</option>
+    <option value="A">Girone A</option>
+    <option value="B">Girone B</option>
+    <option value="C">Girone C</option>
+    <option value="D">Girone D</option>
+    <option value="E">Girone E</option>
+    <option value="F">Girone F</option>
+    <option value="G">Girone G</option>
+  </select>
+</div>
+
 
     <h2>Fase Finale</h2>
-    <div id="finali"></div>
+    <div id="finaliFilterContainer" class="filter">
+  <label for="finaliFilter">Filtra per fase:</label>
+  <select id="finaliFilter" onchange="mostraFinali()">
+    <option value="">Tutte</option>
+    <option value="Ottavi">Ottavi</option>
+    <option value="Quarti">Quarti</option>
+    <option value="Semifinali">Semifinali</option>
+    <option value="Finale 3° Posto">Finale 3° Posto</option>
+    <option value="Finalissima">Finalissima</option>
+  </select>
+</div>
+
   </div>
 
   <script>
@@ -160,6 +184,7 @@
     }
 
     function mostraTerze() {
+      let filtro = document.getElementById("terzeFilter")?.value || "";
       let terze = [];
       Object.keys(classifiche).forEach(g => {
         const squadre = Object.entries(classifiche[g]).map(([nome, stats]) => {
@@ -171,7 +196,7 @@
       });
       terze.sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
       let html = `<table><thead><tr><th>Pos</th><th>Squadra</th><th>Girone</th><th>Punti</th><th>PG</th><th>GF</th><th>GS</th><th>DR</th></tr></thead><tbody>`;
-      terze.forEach((t, i) => {
+      terze.filter(t => !filtro || t.girone === filtro).forEach((t, i) => {
         const cls = i < 2 ? "third-highlight" : "";
         html += `<tr class="${cls}"><td>${i + 1}</td><td>${t.nome}</td><td>${t.girone}</td><td>${t.P}</td><td>${t.PG}</td><td>${t.GF}</td><td>${t.GS}</td><td>${t.DR}</td></tr>`;
       });
@@ -180,12 +205,15 @@
     }
 
     function mostraFinali() {
+      const filtro = document.getElementById("finaliFilter")?.value || "";
       let html = `<table><thead><tr>
         <th>Fase Finale</th><th>Data</th><th>Ora</th><th>Campo</th><th>Turno</th>
         <th>Squadra 1</th><th>Risultato</th><th>Squadra 2</th>
       </tr></thead><tbody>`;
 
-      finaliData.sort((a, b) => new Date(`${a.DATA}T${a.ORA}`) - new Date(`${b.DATA}T${b.ORA}`))
+      finaliData
+        .filter(f => !filtro || f["FASE FINALE"] === filtro)
+        .sort((a, b) => new Date(`${a.DATA}T${a.ORA}`) - new Date(`${b.DATA}T${b.ORA}`))
         .forEach(f => {
           html += `<tr>
             <td>${f["FASE FINALE"]}</td>
@@ -209,12 +237,20 @@
       mostraClassifiche();
 
       // Mostra/nasconde sezione "Migliori Terze" e "Fase Finale"
-      document.getElementById("terze").style.display = filtro ? "none" : "block";
-      document.getElementById("finali").style.display = filtro ? "none" : "block";
+      const showExtra = !filtro;
+      document.getElementById("terze").style.display = showExtra ? "block" : "none";
+      document.getElementById("finali").style.display = showExtra ? "block" : "none";
 
       // Nasconde anche i titoli sezione
-      document.querySelector("h2:nth-of-type(3)").style.display = filtro ? "none" : "block";
-      document.querySelector("h2:nth-of-type(4)").style.display = filtro ? "none" : "block";
+      document.querySelector("h2:nth-of-type(3)").style.display = showExtra ? "block" : "none";
+      document.querySelector("h2:nth-of-type(4)").style.display = showExtra ? "block" : "none";
+
+      // Mostra/nasconde eventuali filtri se aggiunti
+      const terzeFilter = document.getElementById("terzeFilterContainer");
+      if (terzeFilter) terzeFilter.style.display = showExtra ? "block" : "none";
+
+      const finaliFilter = document.getElementById("finaliFilterContainer");
+      if (finaliFilter) finaliFilter.style.display = showExtra ? "block" : "none";
     }
 
     window.onload = caricaDati;

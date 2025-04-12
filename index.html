@@ -190,8 +190,17 @@
     }
 
     function filterGirone() {
+      const filtro = document.getElementById("gironeFilter").value;
       mostraProgramma();
       mostraClassifiche();
+
+      // Mostra/nasconde sezione "Migliori Terze" e "Fase Finale"
+      document.getElementById("terze").style.display = filtro ? "none" : "block";
+      document.getElementById("finali").style.display = filtro ? "none" : "block";
+
+      // Nasconde anche i titoli sezione
+      document.querySelector("h2:nth-of-type(3)").style.display = filtro ? "none" : "block";
+      document.querySelector("h2:nth-of-type(4)").style.display = filtro ? "none" : "block";
     }
 
     window.onload = caricaDati;

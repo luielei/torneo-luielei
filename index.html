@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -17,34 +18,25 @@
 </head>
 <body>
   <h1>Mini-Torneo di Calcio LUI&LEI 2025 - Arogno</h1>
-
   <div class="filter-section">
     <label for="gironeSelect">Seleziona Girone:</label>
-    <select id="gironeSelect">
-      <option value="ALL">Tutti</option>
-    </select>
+    <select id="gironeSelect"><option value="ALL">Tutti</option></select>
   </div>
-
   <h2>Partite della Fase a Gironi</h2>
   <div id="programma"></div>
-
   <h2>Classifiche dei Gironi</h2>
   <div id="classifiche"></div>
-
   <h2>Classifica Migliori Terze</h2>
   <div id="miglioriTerze"></div>
-
   <h2>Fase Finale</h2>
   <div id="finali"></div>
-
   <script>
     const programmaUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=1898554956&single=true&output=csv";
     const finaliUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=660358441&single=true&output=csv";
 
-    let gironiData = {};
-    let miglioriTerzeGlobal = [];
+    let gironiData = {}, miglioriTerzeGlobal = [];
 
-    document.getElementById("gironeSelect").addEventListener("change", () => loadData());
+    document.getElementById("gironeSelect").addEventListener("change", loadData);
 
     async function loadData() {
       const filtro = document.getElementById("gironeSelect").value;
@@ -53,8 +45,7 @@
       aggiornaFiltro(programma);
       mostraPartite(programma, filtro);
       mostraClassifiche(programma, filtro);
-      if (filtro === "ALL") mostraTerze();
-      else document.getElementById("miglioriTerze").innerHTML = "";
+      filtro === "ALL" ? mostraTerze() : document.getElementById("miglioriTerze").innerHTML = "";
       mostraFinali(finali);
     }
 
@@ -79,9 +70,9 @@
       const container = document.getElementById("programma");
       const partite = filtro === "ALL" ? data : data.filter(p => p.GIRONE === filtro);
       partite.sort((a,b) => new Date(`${a.DATA} ${a.ORA}`) - new Date(`${b.DATA} ${b.ORA}`));
-      container.innerHTML = `<table><thead><tr><th>Data</th><th>Ora</th><th>Campo</th><th>Girone</th><th>Squadra 1</th><th>Squadra 2</th><th>Risultato</th></tr></thead><tbody>` +
+      container.innerHTML = "<table><thead><tr><th>Data</th><th>Ora</th><th>Campo</th><th>Girone</th><th>Squadra 1</th><th>Squadra 2</th><th>Risultato</th></tr></thead><tbody>" +
         partite.map(p => `<tr><td>${p.DATA}</td><td>${p.ORA}</td><td>${p.CAMPO}</td><td>${p.GIRONE}</td><td>${p.SQUADRA1}</td><td>${p.SQUADRA2}</td><td>${p.RISULTATO}</td></tr>`).join('') +
-        `</tbody></table>`;
+        "</tbody></table>";
     }
 
     function mostraClassifiche(data, filtro) {
@@ -95,15 +86,10 @@
         const cls = {};
         for (const p of partite) {
           const [g1, g2] = p.RISULTATO.split("-").map(Number);
-          [p.SQUADRA1, p.SQUADRA2].forEach(sq => {
-            if (!cls[sq]) cls[sq] = { giocate: 0, punti: 0, gf: 0, gs: 0 };
-          });
-          cls[p.SQUADRA1].giocate++;
-          cls[p.SQUADRA2].giocate++;
-          cls[p.SQUADRA1].gf += g1;
-          cls[p.SQUADRA1].gs += g2;
-          cls[p.SQUADRA2].gf += g2;
-          cls[p.SQUADRA2].gs += g1;
+          [p.SQUADRA1, p.SQUADRA2].forEach(sq => cls[sq] = cls[sq] || { giocate: 0, punti: 0, gf: 0, gs: 0 });
+          cls[p.SQUADRA1].giocate++; cls[p.SQUADRA2].giocate++;
+          cls[p.SQUADRA1].gf += g1; cls[p.SQUADRA1].gs += g2;
+          cls[p.SQUADRA2].gf += g2; cls[p.SQUADRA2].gs += g1;
           if (g1 > g2) cls[p.SQUADRA1].punti += 3;
           else if (g1 < g2) cls[p.SQUADRA2].punti += 3;
           else { cls[p.SQUADRA1].punti += 1; cls[p.SQUADRA2].punti += 1; }
@@ -116,7 +102,10 @@
       const terze = Object.values(gironiData).map(g => g[2]).filter(Boolean);
       terze.sort((a,b) => b.punti - a.punti || (b.gf-b.gs)-(a.gf-a.gs) || b.gf - a.gf);
       miglioriTerzeGlobal = terze;
-      const topTwo = miglioriTerzeGlobal.slice(0,2).map(t => t.squadra);
+      let topTwo = [];
+      if (miglioriTerzeGlobal.length >= 2) {
+        topTwo = miglioriTerzeGlobal.slice(0, 2).map(t => t.squadra);
+      }
 
       for (const g of gironi) {
         const arr = gironiData[g];
@@ -124,7 +113,7 @@
           const dr = t.gf - t.gs;
           let cls = "";
           if (i < 2) cls = "highlight";
-          if (topTwo.includes(t.squadra)) cls = "best-third";
+          else if (topTwo.includes(t.squadra)) cls = "best-third";
           return `<tr class="${cls}"><td>${t.squadra}</td><td>${t.giocate}</td><td>${t.punti}</td><td>${t.gf}</td><td>${t.gs}</td><td>${dr}</td></tr>`;
         }).join('');
         div.innerHTML += `<h3>Girone ${g}</h3><table><thead><tr><th>Squadra</th><th>Giocate</th><th>Punti</th><th>GF</th><th>GS</th><th>DR</th></tr></thead><tbody>${rows}</tbody></table>`;
@@ -146,9 +135,9 @@
     function mostraFinali(data) {
       const container = document.getElementById("finali");
       data.sort((a,b) => new Date(`${a.DATA} ${a.ORA}`) - new Date(`${b.DATA} ${b.ORA}`));
-      container.innerHTML = `<table><thead><tr><th>Data</th><th>Ora</th><th>Campo</th><th>Turno</th><th>Squadra 1</th><th>Squadra 2</th><th>Risultato</th></tr></thead><tbody>` +
+      container.innerHTML = "<table><thead><tr><th>Data</th><th>Ora</th><th>Campo</th><th>Turno</th><th>Squadra 1</th><th>Squadra 2</th><th>Risultato</th></tr></thead><tbody>" +
         data.map(p => `<tr><td>${p.DATA}</td><td>${p.ORA}</td><td>${p.CAMPO}</td><td>${p.TURNO}</td><td>${p.SQUADRA1}</td><td>${p.SQUADRA2}</td><td>${p.RISULTATO}</td></tr>`).join('') +
-        `</tbody></table>`;
+        "</tbody></table>";
     }
 
     loadData();

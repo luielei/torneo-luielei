@@ -180,11 +180,25 @@
     }
 
     function mostraFinali() {
-      let html = `<table><thead><tr><th>Data</th><th>Ora</th><th>Campo</th><th>Turno</th><th>Squadra 1</th><th>Risultato</th><th>Squadra 2</th></tr></thead><tbody>`;
+      let html = `<table><thead><tr>
+        <th>Fase Finale</th><th>Data</th><th>Ora</th><th>Campo</th><th>Turno</th>
+        <th>Squadra 1</th><th>Risultato</th><th>Squadra 2</th>
+      </tr></thead><tbody>`;
+
       finaliData.sort((a, b) => new Date(`${a.DATA}T${a.ORA}`) - new Date(`${b.DATA}T${b.ORA}`))
         .forEach(f => {
-          html += `<tr><td>${f.DATA}</td><td>${f.ORA}</td><td>${f.CAMPO}</td><td>${f.TURNO}</td><td>${f.SQUADRA1}</td><td>${f.RISULTATO}</td><td>${f.SQUADRA2}</td></tr>`;
+          html += `<tr>
+            <td>${f["FASE FINALE"]}</td>
+            <td>${f.DATA}</td>
+            <td>${f.ORA}</td>
+            <td>${f.CAMPO}</td>
+            <td>${f.TURNO}</td>
+            <td>${f.SQUADRA1}</td>
+            <td>${f.RISULTATO}</td>
+            <td>${f.SQUADRA2}</td>
+          </tr>`;
         });
+
       html += `</tbody></table>`;
       document.getElementById("finali").innerHTML = html;
     }

@@ -239,7 +239,7 @@
     }
 
 function mostraFinali() {
-  // Crea mappa delle qualificazioni
+  // Step 1: crea mappa squadre qualificate da gironi
   let qualificati = {};
   Object.keys(classifiche).forEach(g => {
     let squadre = Object.entries(classifiche[g]).map(([nome, stats]) => {
@@ -251,7 +251,7 @@ function mostraFinali() {
     if (squadre[2]) qualificati[`3${g}`] = squadre[2].nome;
   });
 
-  // Calcola le migliori terze
+  // Step 2: aggiungi le 2 migliori terze
   let terze = Object.keys(classifiche).map(g => {
     const squadre = Object.entries(classifiche[g]).map(([nome, stats]) => {
       const DR = stats.GF - stats.GS;
@@ -263,17 +263,43 @@ function mostraFinali() {
   if (terze[0]) qualificati["3M1"] = terze[0].nome;
   if (terze[1]) qualificati["3M2"] = terze[1].nome;
 
-  // Mostra la tabella delle finali
+  // Step 3: mappa dei risultati e vincitori/ perdenti progressivi
+  let vincitori = {};
+  let perdenti = {};
+
+  // Step 4: costruzione tabella finali
   let html = `<table><thead><tr><th>Fase Finale</th><th>Data</th><th>Ora</th><th>Campo</th><th>Turno</th><th>Squadra 1</th><th>Risultato</th><th>Squadra 2</th></tr></thead><tbody>`;
+
   finaliData.sort((a, b) => new Date(`${a.DATA}T${a.ORA}`) - new Date(`${b.DATA}T${b.ORA}`))
     .forEach(f => {
-      const squadra1 = qualificati[f.SQUADRA1] || f.SQUADRA1;
-      const squadra2 = qualificati[f.SQUADRA2] || f.SQUADRA2;
-      html += `<tr><td>${f["FASE FINALE"]}</td><td>${f.DATA}</td><td>${f.ORA}</td><td>${f.CAMPO}</td><td>${f.TURNO}</td><td>${squadra1}</td><td>${f.RISULTATO}</td><td>${squadra2}</td></tr>`;
+      const turno = f.TURNO;
+      const cod1 = f.SQUADRA1.trim();
+      const cod2 = f.SQUADRA2.trim();
+      const risultato = f.RISULTATO.trim();
+
+      // Risolvi i nomi delle squadre
+      const squadra1 = qualificati[cod1] || vincitori[cod1] || perdenti[cod1] || cod1;
+      const squadra2 = qualificati[cod2] || vincitori[cod2] || perdenti[cod2] || cod2;
+
+      // Se risultato valido tipo "3-2", salva vincente e perdente
+      if (/^\d+-\d+$/.test(risultato)) {
+        const [g1, g2] = risultato.split("-").map(Number);
+        if (g1 > g2) {
+          vincitori[`VINC_${turno}`] = squadra1;
+          perdenti[`PERD_${turno}`] = squadra2;
+        } else if (g2 > g1) {
+          vincitori[`VINC_${turno}`] = squadra2;
+          perdenti[`PERD_${turno}`] = squadra1;
+        }
+      }
+
+      html += `<tr><td>${f["FASE FINALE"]}</td><td>${f.DATA}</td><td>${f.ORA}</td><td>${f.CAMPO}</td><td>${turno}</td><td>${squadra1}</td><td>${risultato}</td><td>${squadra2}</td></tr>`;
     });
+
   html += `</tbody></table>`;
   document.getElementById("finali").innerHTML = html;
 }
+
 
 
     function filterFase() {

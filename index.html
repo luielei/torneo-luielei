@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mini-Torneo LUI & LEI 2025</title>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
   <style>
@@ -12,7 +12,7 @@
       background-color: #f8f8f8;
       color: #333;
     }
-    h1, h2 {
+    h1, h2, h3 {
       text-align: center;
     }
     table {
@@ -51,6 +51,7 @@
 </head>
 <body>
   <h1>Mini-Torneo di Calcio LUI & LEI 2025</h1>
+
   <div class="filters">
     <label for="gironeSelect">Filtra per girone:</label>
     <select id="gironeSelect" onchange="filterByGirone()">
@@ -67,10 +68,13 @@
 
   <h2>Fase a Gironi</h2>
   <div id="programmaContainer" class="responsive-table"></div>
+
   <h2>Classifiche dei Gironi</h2>
   <div id="classificheContainer" class="responsive-table"></div>
+
   <h2>Classifica Migliori Terze</h2>
   <div id="terzeContainer" class="responsive-table"></div>
+
   <h2>Fase Finale</h2>
   <div id="finaliContainer" class="responsive-table"></div>
 
@@ -116,10 +120,14 @@
       document.querySelectorAll("#programmaContainer table tbody tr").forEach(row => {
         row.style.display = !girone || row.dataset.girone === girone ? "" : "none";
       });
+      document.querySelectorAll("#classificheContainer > h3, #classificheContainer table").forEach(el => {
+        el.style.display = !girone || el.textContent.includes(girone) ? "" : "none";
+      });
     }
 
     function calcolaClassifiche() {
       const stats = {};
+      const terze = [];
       programmaData.forEach(r => {
         const g = r["GIRONE"];
         const s1 = r["SQUADRA1"], s2 = r["SQUADRA2"];
@@ -143,7 +151,6 @@
       });
 
       let html = "";
-      const terze = [];
       gironi = Array.from(gironi).sort();
       gironi.forEach(g => {
         html += `<h3>Girone ${g}</h3><table><thead><tr><th>#</th><th>Squadra</th><th>Pt</th><th>G</th><th>GF</th><th>GS</th><th>DR</th></tr></thead><tbody>`;

@@ -35,11 +35,11 @@
       background-color: #ffffff22;
     }
     .qualificata {
-      background-color: #28a745 !important; /* verde */
+      background-color: #28a745 !important;
       color: #fff;
     }
     .migliore-terza {
-      background-color: #ffc107 !important; /* giallo */
+      background-color: #ffc107 !important;
       color: #000;
     }
     select {
@@ -53,7 +53,7 @@
   </style>
 </head>
 <body>
-  <h1>Mini-Torneo Lui & Lei 2025 01</h1>
+  <h1>Mini-Torneo Lui & Lei 2025</h1>
   <h2>Programma e Classifiche</h2>
 
   <label for="gironeSelect">Filtra per girone:</label>
@@ -90,8 +90,9 @@
       let html = `<h2>${titolo}</h2><table id="${id}"><thead><tr>`;
       intestazioni.forEach(i => html += `<th>${i}</th>`);
       html += '</tr></thead><tbody>';
-      righe.forEach(r => {
-        html += '<tr>' + intestazioni.map(i => `<td>${r[i]}</td>`).join('') + '</tr>';
+      righe.forEach((r, idx) => {
+        const classi = r._classe || '';
+        html += `<tr class="${classi}">` + intestazioni.map(i => `<td>${r[i]}</td>`).join('') + '</tr>';
       });
       html += '</tbody></table>';
       return html;
@@ -111,9 +112,8 @@
     async function main() {
       const partite = await caricaCSV(programmaCSV);
       const finali = await caricaCSV(finaliCSV);
-      const gironi = [...new Set(partite.map(p => p.GIRONE))];
+      const gironi = [...new Set(partite.map(p => p.GIRONE))].sort();
 
-      // PROGRAMMA
       const programmaDiv = document.getElementById('programma');
       gironi.forEach(g => {
         const p = partite.filter(r => r.GIRONE === g);
@@ -123,29 +123,42 @@
         programmaDiv.appendChild(wrapper);
       });
 
-      // CLASSIFICHE (semplificate per esempio)
       const classificaDiv = document.getElementById('classifiche');
+      const terze = [];
+
       gironi.forEach(g => {
         const squadre = [...new Set(partite.filter(p => p.GIRONE === g).flatMap(p => [p.SQUADRA1, p.SQUADRA2]))];
-        const classifica = squadre.map(nome => ({ Squadra: nome, Punti: 0, GF: 0, GS: 0 }));
+        const classifica = squadre.map(nome => ({ Squadra: nome, Punti: 0, GF: 0, GS: 0, PG: 0 }));
         partite.filter(p => p.GIRONE === g && p.RISULTATO).forEach(p => {
           const [gol1, gol2] = p.RISULTATO.split('-').map(Number);
           const s1 = classifica.find(s => s.Squadra === p.SQUADRA1);
           const s2 = classifica.find(s => s.Squadra === p.SQUADRA2);
-          s1.GF += gol1; s1.GS += gol2;
-          s2.GF += gol2; s2.GS += gol1;
+          s1.GF += gol1; s1.GS += gol2; s1.PG++;
+          s2.GF += gol2; s2.GS += gol1; s2.PG++;
           if (gol1 > gol2) s1.Punti += 3;
           else if (gol2 > gol1) s2.Punti += 3;
           else { s1.Punti += 1; s2.Punti += 1; }
         });
-        classifica.sort((a, b) => b.Punti - a.Punti || (b.GF - b.GS) - (a.GF - a.GS) || b.GF - a.GF);
-        const html = creaTabella(`Classifica Girone ${g}`, ['Squadra', 'Punti', 'GF', 'GS'], classifica, `classifica-${g}`);
+        classifica.forEach(s => s.DR = s.GF - s.GS);
+        classifica.sort((a, b) => b.Punti - a.Punti || b.DR - a.DR || b.GF - a.GF);
+        classifica.forEach((s, i) => {
+          if (i === 0 || i === 1) s._classe = 'qualificata';
+          if (i === 2) terze.push({...s, girone: g});
+        });
+        const html = creaTabella(`Classifica Girone ${g}`, ['Squadra', 'Punti', 'PG', 'GF', 'GS', 'DR'], classifica, `classifica-${g}`);
         const wrapper = document.createElement('div');
         wrapper.innerHTML = html;
         classificaDiv.appendChild(wrapper);
       });
 
-      // FINALI
+      // Classifica migliori terze
+      terze.sort((a, b) => b.Punti - a.Punti || b.DR - a.DR || b.GF - a.GF);
+      terze.forEach((t, i) => {
+        if (i < 2) t._classe = 'migliore-terza';
+      });
+      const terzeHTML = creaTabella('Classifica migliori terze classificate', ['Squadra', 'Punti', 'PG', 'GF', 'GS', 'DR', 'girone'], terze);
+      document.getElementById('classifica-terze').innerHTML = terzeHTML;
+
       const finaliDiv = document.getElementById('finali');
       const finaliHTML = creaTabella('Fase Finale', ['DATA', 'ORA', 'CAMPO', 'TURNO', 'SQUADRA1', 'SQUADRA2', 'RISULTATO'], finali);
       finaliDiv.innerHTML = finaliHTML;

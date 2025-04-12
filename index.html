@@ -26,7 +26,15 @@
 </head>
 <body>
   <div class="container">
-    <h1>Mini-Torneo LUI&LEI 2025 01</h1>
+    <h1>Mini-Torneo LUI&LEI 2025</h1>
+
+    <div class="filter">
+      <label for="faseFilter">Visualizza:</label>
+      <select id="faseFilter" onchange="filterFase()">
+        <option value="tutto">Fase a Gironi + Finali</option>
+        <option value="finali">Solo Fase Finale</option>
+      </select>
+    </div>
 
     <div class="filter">
       <label for="gironeFilter">Filtra per girone:</label>
@@ -42,16 +50,18 @@
       </select>
     </div>
 
-    <h2>Programma Fase a Gironi</h2>
-    <div id="programma"></div>
+    <div id="contenutoGironi">
+      <h2>Programma Fase a Gironi</h2>
+      <div id="programma"></div>
 
-    <h2>Classifiche Gironi</h2>
-    <div id="classifiche"></div>
+      <h2>Classifiche Gironi</h2>
+      <div id="classifiche"></div>
 
-    <h2>Migliori Terze Classificate</h2>
-    <div id="terze"></div>
+      <h2>Migliori Terze Classificate</h2>
+      <div id="terze"></div>
+    </div>
 
-    <h2>Fase Finale</h2>
+    <h2 id="titoloFinali">Fase Finale</h2>
     <div id="finali"></div>
   </div>
 
@@ -94,28 +104,23 @@
       html += `</tbody></table>`;
       document.getElementById("programma").innerHTML = html;
     }
-	
+
     function calcolaClassifiche() {
       classifiche = {};
       gironiData.forEach(p => {
         const girone = p.GIRONE;
         if (!classifiche[girone]) classifiche[girone] = {};
-
         const [g1, g2] = p.RISULTATO.split("-").map(n => parseInt(n));
-        const s1 = p.SQUADRA1;
-        const s2 = p.SQUADRA2;
-
+        const s1 = p.SQUADRA1, s2 = p.SQUADRA2;
         [s1, s2].forEach(s => {
           if (!classifiche[girone][s]) classifiche[girone][s] = { PG: 0, GF: 0, GS: 0, P: 0 };
         });
-
         classifiche[girone][s1].PG++;
         classifiche[girone][s2].PG++;
         classifiche[girone][s1].GF += g1;
         classifiche[girone][s1].GS += g2;
         classifiche[girone][s2].GF += g2;
         classifiche[girone][s2].GS += g1;
-
         if (g1 > g2) classifiche[girone][s1].P += 3;
         else if (g2 > g1) classifiche[girone][s2].P += 3;
         else { classifiche[girone][s1].P += 1; classifiche[girone][s2].P += 1; }
@@ -139,7 +144,6 @@
       });
       miglioriTerze.sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
       const primeDueTerze = miglioriTerze.slice(0, 2).map(s => s.nome);
-
       gironiOrdinati.forEach(g => {
         if (filtro && filtro !== g) return;
         let squadre = Object.entries(classifiche[g]).map(([nome, stats]) => {
@@ -180,41 +184,28 @@
     }
 
     function mostraFinali() {
-      let html = `<table><thead><tr>
-        <th>Fase Finale</th><th>Data</th><th>Ora</th><th>Campo</th><th>Turno</th>
-        <th>Squadra 1</th><th>Risultato</th><th>Squadra 2</th>
-      </tr></thead><tbody>`;
-
+      let html = `<table><thead><tr><th>Fase Finale</th><th>Data</th><th>Ora</th><th>Campo</th><th>Turno</th><th>Squadra 1</th><th>Risultato</th><th>Squadra 2</th></tr></thead><tbody>`;
       finaliData.sort((a, b) => new Date(`${a.DATA}T${a.ORA}`) - new Date(`${b.DATA}T${b.ORA}`))
         .forEach(f => {
-          html += `<tr>
-            <td>${f["FASE FINALE"]}</td>
-            <td>${f.DATA}</td>
-            <td>${f.ORA}</td>
-            <td>${f.CAMPO}</td>
-            <td>${f.TURNO}</td>
-            <td>${f.SQUADRA1}</td>
-            <td>${f.RISULTATO}</td>
-            <td>${f.SQUADRA2}</td>
-          </tr>`;
+          html += `<tr><td>${f["FASE FINALE"]}</td><td>${f.DATA}</td><td>${f.ORA}</td><td>${f.CAMPO}</td><td>${f.TURNO}</td><td>${f.SQUADRA1}</td><td>${f.RISULTATO}</td><td>${f.SQUADRA2}</td></tr>`;
         });
-
       html += `</tbody></table>`;
       document.getElementById("finali").innerHTML = html;
+    }
+
+    function filterFase() {
+      const value = document.getElementById("faseFilter").value;
+      document.getElementById("contenutoGironi").style.display = value === "finali" ? "none" : "block";
+      document.getElementById("gironeFilter").disabled = value === "finali";
     }
 
     function filterGirone() {
       const filtro = document.getElementById("gironeFilter").value;
       mostraProgramma();
       mostraClassifiche();
-
-      // Mostra/nasconde sezione "Migliori Terze" e "Fase Finale"
       document.getElementById("terze").style.display = filtro ? "none" : "block";
       document.getElementById("finali").style.display = filtro ? "none" : "block";
-
-      // Nasconde anche i titoli sezione
-      document.querySelector("h2:nth-of-type(3)").style.display = filtro ? "none" : "block";
-      document.querySelector("h2:nth-of-type(4)").style.display = filtro ? "none" : "block";
+      document.getElementById("titoloFinali").style.display = filtro ? "none" : "block";
     }
 
     window.onload = caricaDati;

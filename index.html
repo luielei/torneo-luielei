@@ -82,7 +82,8 @@
       updateGironeFilter(programma);
       displayProgramma(programma, gironeFilter);
       displayClassifiche(programma, gironeFilter);
-      displayMiglioriTerze();
+      if (gironeFilter === "ALL") displayMiglioriTerze();
+      else document.getElementById("miglioriTerze").innerHTML = "";
       displayFinali(finali);
     }
 
@@ -159,6 +160,7 @@
       const terze = Object.entries(gironiData).map(([girone, classifica]) => classifica[2]).filter(Boolean);
       terze.sort((a, b) => b.punti - a.punti || (b.gf - b.gs) - (a.gf - a.gs) || b.gf - a.gf);
       miglioriTerzeGlobal = terze;
+      const topTwoTerze = miglioriTerzeGlobal.slice(0, 2).map(t => t.squadra);
 
       for (const girone of gironi) {
         const classArray = gironiData[girone];
@@ -167,7 +169,7 @@
           const dr = entry.gf - entry.gs;
           let cls = "";
           if (index < 2) cls = "highlight";
-          if (miglioriTerzeGlobal.slice(0, 2).find(t => t.squadra === entry.squadra)) cls = "best-third";
+          if (topTwoTerze.includes(entry.squadra)) cls = "best-third";
           html.push(`<tr class="${cls}"><td>${entry.squadra}</td><td>${entry.giocate}</td><td>${entry.punti}</td><td>${entry.gf}</td><td>${entry.gs}</td><td>${dr}</td></tr>`);
         });
         html.push("</tbody></table>");
@@ -177,6 +179,11 @@
 
     function displayMiglioriTerze() {
       const container = document.getElementById("miglioriTerze");
+      const filtro = document.getElementById("gironeSelect").value;
+      if (filtro !== "ALL") {
+        container.innerHTML = "";
+        return;
+      }
       if (miglioriTerzeGlobal.length === 0) return container.innerHTML = "<p>Calcolo in corso...</p>";
 
       const html = ["<table><thead><tr><th>Squadra</th><th>Punti</th><th>GF</th><th>GS</th><th>DR</th></tr></thead><tbody>"];

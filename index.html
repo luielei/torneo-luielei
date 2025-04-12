@@ -74,22 +74,19 @@
   <h2>Fase Finale</h2>
   <div id="finaliContainer" class="responsive-table"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
   <script>
     const programmaURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=1898554956&single=true&output=csv";
     const finaliURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=660358441&single=true&output=csv";
 
     let programmaData = [];
-    let classifiche = {};
-    let risultati = {};
     let gironi = new Set();
-    let punti = {};
 
     Papa.parse(programmaURL, {
       download: true,
       header: true,
       complete: function(results) {
         programmaData = results.data.filter(r => r["DATA"] && r["RISULTATO"].includes("-"));
+        programmaData.sort((a, b) => new Date(a.DATA + ' ' + a.ORA) - new Date(b.DATA + ' ' + b.ORA));
         generaProgramma();
         calcolaClassifiche();
       }
@@ -146,6 +143,7 @@
       });
 
       let html = "";
+      const terze = [];
       gironi = Array.from(gironi).sort();
       gironi.forEach(g => {
         html += `<h3>Girone ${g}</h3><table><thead><tr><th>#</th><th>Squadra</th><th>Pt</th><th>G</th><th>GF</th><th>GS</th><th>DR</th></tr></thead><tbody>`;
@@ -154,12 +152,26 @@
         }).sort((a, b) => b.PUNTI - a.PUNTI || b.DR - a.DR || b.GF - a.GF);
 
         squadre.forEach((s, i) => {
-          const cl = i === 0 || i === 1 ? "highlight-1" : i === 2 ? "highlight-2" : "";
+          if (i === 2) terze.push({ girone: g, ...s });
+        });
+
+        const topTerze = terze.sort((a, b) => b.PUNTI - a.PUNTI || b.DR - a.DR || b.GF - a.GF).slice(0, 2).map(t => t.squadra);
+
+        squadre.forEach((s, i) => {
+          let cl = "";
+          if (i === 0 || i === 1) cl = "highlight-1";
+          else if (i === 2 && topTerze.includes(s.squadra)) cl = "highlight-2";
           html += `<tr class="${cl}"><td>${i + 1}</td><td>${s.squadra}</td><td>${s.PUNTI}</td><td>${s.GI}</td><td>${s.GF}</td><td>${s.GS}</td><td>${s.DR}</td></tr>`;
         });
         html += "</tbody></table>";
       });
+
+      const miglioriTerze = terze.sort((a, b) => b.PUNTI - a.PUNTI || b.DR - a.DR || b.GF - a.GF).map((s, i) => {
+        return `<tr class="${i < 2 ? 'highlight-2' : ''}"><td>${i + 1}</td><td>${s.girone}</td><td>${s.squadra}</td><td>${s.PUNTI}</td><td>${s.GI}</td><td>${s.GF}</td><td>${s.GS}</td><td>${s.DR}</td></tr>`;
+      });
+
       document.getElementById("classificheContainer").innerHTML = html;
+      document.getElementById("terzeContainer").innerHTML = `<table><thead><tr><th>#</th><th>Girone</th><th>Squadra</th><th>Pt</th><th>G</th><th>GF</th><th>GS</th><th>DR</th></tr></thead><tbody>${miglioriTerze.join('')}</tbody></table>`;
     }
 
     function generaFinali(data) {

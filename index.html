@@ -53,20 +53,8 @@
   </style>
 </head>
 <body>
-  <h1>Mini-Torneo Lui & Lei 2025 02</h1>
+  <h1>Mini-Torneo Lui & Lei 2025 03</h1>
   <h2>Programma e Classifiche</h2>
-
-  <label for="gironeSelect">Filtra per girone:</label>
-  <select id="gironeSelect">
-    <option value="all">Tutti i gironi</option>
-    <option value="A">Girone A</option>
-    <option value="B">Girone B</option>
-    <option value="C">Girone C</option>
-    <option value="D">Girone D</option>
-    <option value="E">Girone E</option>
-    <option value="F">Girone F</option>
-    <option value="G">Girone G</option>
-  </select>
 
   <div id="programma"></div>
   <div id="classifiche"></div>
@@ -82,7 +70,7 @@
       const text = await res.text();
       const righe = text.trim().split('\n').map(r => r.split(','));
       const header = righe[0];
-      const dati = righe.slice(1).map(r => Object.fromEntries(r.map((v, i) => [header[i], v])));
+      const dati = righe.slice(1).map(r => Object.fromEntries(header.map((k, i) => [k, r[i] ?? ''])));
       return dati;
     }
 
@@ -98,30 +86,22 @@
       return html;
     }
 
-    function filtraPerGirone(girone) {
-      document.querySelectorAll('table[id^="programma-"]').forEach(tbl => {
-        tbl.parentElement.classList.toggle('hidden', girone !== 'all' && !tbl.id.endsWith(girone));
-      });
-      document.querySelectorAll('table[id^="classifica-"]').forEach(tbl => {
-        tbl.parentElement.classList.toggle('hidden', girone !== 'all' && !tbl.id.endsWith(girone));
-      });
-    }
-
-    document.getElementById('gironeSelect').addEventListener('change', e => filtraPerGirone(e.target.value));
-
     async function main() {
       const partite = await caricaCSV(programmaCSV);
       const finali = await caricaCSV(finaliCSV);
-      const gironi = [...new Set(partite.map(p => p.GIRONE))].sort();
+
+      // Ordina le partite per data e ora (globale, non per girone)
+      partite.sort((a, b) => {
+        const dateA = new Date(`${a.DATA}T${a.ORA}`);
+        const dateB = new Date(`${b.DATA}T${b.ORA}`);
+        return dateA - dateB;
+      });
 
       const programmaDiv = document.getElementById('programma');
-      gironi.forEach(g => {
-        const p = partite.filter(r => r.GIRONE === g);
-        const html = creaTabella(`Programma Girone ${g}`, ['GIORNO', 'DATA', 'ORA', 'CAMPO', 'SQUADRA1', 'SQUADRA2', 'RISULTATO'], p, `programma-${g}`);
-        const wrapper = document.createElement('div');
-        wrapper.innerHTML = html;
-        programmaDiv.appendChild(wrapper);
-      });
+      const programmaHTML = creaTabella(`Programma globale`, ['GIORNO', 'DATA', 'ORA', 'CAMPO', 'GIRONE', 'SQUADRA1', 'SQUADRA2', 'RISULTATO'], partite);
+      programmaDiv.innerHTML = programmaHTML;
+
+      const gironi = [...new Set(partite.map(p => p.GIRONE))].sort();
 
       const classificaDiv = document.getElementById('classifiche');
       const terze = [];
@@ -129,8 +109,9 @@
       gironi.forEach(g => {
         const squadre = [...new Set(partite.filter(p => p.GIRONE === g).flatMap(p => [p.SQUADRA1, p.SQUADRA2]))];
         const classifica = squadre.map(nome => ({ Squadra: nome, Punti: 0, GF: 0, GS: 0, PG: 0 }));
-        partite.filter(p => p.GIRONE === g && p.RISULTATO).forEach(p => {
+        partite.filter(p => p.GIRONE === g && p.RISULTATO.includes('-')).forEach(p => {
           const [gol1, gol2] = p.RISULTATO.split('-').map(e => parseInt(e.trim()));
+          if (isNaN(gol1) || isNaN(gol2)) return;
           const s1 = classifica.find(s => s.Squadra === p.SQUADRA1);
           const s2 = classifica.find(s => s.Squadra === p.SQUADRA2);
           s1.GF += gol1; s1.GS += gol2; s1.PG++;

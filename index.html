@@ -85,16 +85,16 @@
 
     function mostraProgramma() {
       const filtro = document.getElementById("gironeFilter").value;
-      let html = `<table><thead><tr><th>Data</th><th>Ora</th><th>Campo</th><th>Girone</th><th>Squadra 1</th><th>Risultato</th><th>Squadra 2</th></tr></thead><tbody>`;
+      let html = `<table><thead><tr><th>Giorno</th><th>Data</th><th>Ora</th><th>Campo</th><th>Girone</th><th>Squadra 1</th><th>Risultato</th><th>Squadra 2</th></tr></thead><tbody>`;
       gironiData.filter(p => !filtro || p["GIRONE"] === filtro)
         .sort((a, b) => new Date(`${a["DATA"]}T${a["ORA"]}`) - new Date(`${b["DATA"]}T${b["ORA"]}`))
         .forEach(p => {
-          html += `<tr><td>${p["DATA"]}</td><td>${p["ORA"]}</td><td>${p["CAMPO"]}</td><td>${p["GIRONE"]}</td><td>${p["SQUADRA1"]}</td><td>${p["RISULTATO"]}</td><td>${p["SQUADRA2"]}</td></tr>`;
+          html += `<tr><td>${p["GIORNO"]}</td><td>${p["DATA"]}</td><td>${p["ORA"]}</td><td>${p["CAMPO"]}</td><td>${p["GIRONE"]}</td><td>${p["SQUADRA1"]}</td><td>${p["RISULTATO"]}</td><td>${p["SQUADRA2"]}</td></tr>`;
         });
       html += `</tbody></table>`;
       document.getElementById("programma").innerHTML = html;
     }
-
+	
     function calcolaClassifiche() {
       classifiche = {};
       gironiData.forEach(p => {

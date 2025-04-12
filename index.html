@@ -121,6 +121,7 @@
         else { classifiche[girone][s1].P += 1; classifiche[girone][s2].P += 1; }
       });
       mostraClassifiche();
+      mostraTerze();
     }
 
     function mostraClassifiche() {
@@ -136,12 +137,32 @@
         squadre.sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
         html += `<h3>Girone ${g}</h3><table><thead><tr><th>Pos</th><th>Squadra</th><th>Punti</th><th>PG</th><th>GF</th><th>GS</th><th>DR</th></tr></thead><tbody>`;
         squadre.forEach((s, i) => {
-          const cls = i < 2 ? "highlight" : (i === 2 && g === "A" ? "third-highlight" : "");
+          const cls = i < 2 ? "highlight" : (i === 2 ? "third-highlight" : "");
           html += `<tr class="${cls}"><td>${i + 1}</td><td>${s.nome}</td><td>${s.P}</td><td>${s.PG}</td><td>${s.GF}</td><td>${s.GS}</td><td>${s.DR}</td></tr>`;
         });
         html += `</tbody></table>`;
       });
       document.getElementById("classifiche").innerHTML = html;
+    }
+
+    function mostraTerze() {
+      let terze = [];
+      Object.keys(classifiche).forEach(g => {
+        const squadre = Object.entries(classifiche[g]).map(([nome, stats]) => {
+          const DR = stats.GF - stats.GS;
+          return { girone: g, nome, ...stats, DR };
+        });
+        squadre.sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
+        if (squadre.length >= 3) terze.push(squadre[2]);
+      });
+      terze.sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
+      let html = `<table><thead><tr><th>Pos</th><th>Squadra</th><th>Girone</th><th>Punti</th><th>PG</th><th>GF</th><th>GS</th><th>DR</th></tr></thead><tbody>`;
+      terze.forEach((t, i) => {
+        const cls = i < 2 ? "third-highlight" : "";
+        html += `<tr class="${cls}"><td>${i + 1}</td><td>${t.nome}</td><td>${t.girone}</td><td>${t.P}</td><td>${t.PG}</td><td>${t.GF}</td><td>${t.GS}</td><td>${t.DR}</td></tr>`;
+      });
+      html += `</tbody></table>`;
+      document.getElementById("terze").innerHTML = html;
     }
 
     function mostraFinali() {

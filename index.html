@@ -125,17 +125,20 @@
 
   <script>
     const timestamp = new Date().getTime();
-    const programmaUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=1898554956&single=true&output=csv&t=" + timestamp;
-    const finaliUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=660358441&single=true&output=csv&t=" + timestamp;
+const timestamp = new Date().getTime();
+const baseProxy = "https://script.google.com/macros/s/AKfycbxbFV03QODYznLzLzsBObNDe43m2hQbSYd9iiZKGoZuXHyXF5IFXEldVQgzgwQaSijh-Q/exec"; // <-- sostituisci con il tuo URL
+const programmaUrl = `${baseProxy}?gid=1898554956&t=${timestamp}`;
+const finaliUrl = `${baseProxy}?gid=660358441&t=${timestamp}`;
 
     let gironiData = [];
     let classifiche = {};
     let finaliData = [];
 
-    function caricaDati() {
+  function caricaDati() {
   const timestamp = new Date().getTime();
-  const programmaUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=1898554956&single=true&output=csv&t=" + timestamp;
-  const finaliUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=660358441&single=true&output=csv&t=" + timestamp;
+  const baseProxy = "https://script.google.com/macros/s/AKfycbzEXAMPLExxxxx/exec";
+  const programmaUrl = `${baseProxy}?gid=1898554956&t=${timestamp}`;
+  const finaliUrl = `${baseProxy}?gid=660358441&t=${timestamp}`;
 
   Papa.parse(programmaUrl, {
     download: true,
@@ -144,7 +147,7 @@
       gironiData = results.data.filter(r => r["GIRONE"]);
       mostraProgramma();
       calcolaClassifiche();
-      verificaCaricamenti(); // CHIAMIAMO QUI
+      verificaCaricamenti();
     }
   });
 
@@ -153,11 +156,10 @@
     header: true,
     complete: function(results) {
       finaliData = results.data;
-      verificaCaricamenti(); // CHIAMIAMO QUI
+      verificaCaricamenti();
     }
   });
 }
-
 
 
     function mostraProgramma() {

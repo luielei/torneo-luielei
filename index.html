@@ -161,30 +161,6 @@
     }
 
     function calcolaClassifiche() {
-      classifiche = {};
-      gironiData.forEach(p => {
-        const girone = p.GIRONE;
-        if (!classifiche[girone]) classifiche[girone] = {};
-        const [g1, g2] = p.RISULTATO.split("-").map(n => parseInt(n));
-        const s1 = p.SQUADRA1, s2 = p.SQUADRA2;
-        [s1, s2].forEach(s => {
-          if (!classifiche[girone][s]) classifiche[girone][s] = { PG: 0, GF: 0, GS: 0, P: 0 };
-        });
-        classifiche[girone][s1].PG++;
-        classifiche[girone][s2].PG++;
-        classifiche[girone][s1].GF += g1;
-        classifiche[girone][s1].GS += g2;
-        classifiche[girone][s2].GF += g2;
-        classifiche[girone][s2].GS += g1;
-        if (g1 > g2) classifiche[girone][s1].P += 3;
-        else if (g2 > g1) classifiche[girone][s2].P += 3;
-        else { classifiche[girone][s1].P += 1; classifiche[girone][s2].P += 1; }
-      });
-      mostraClassifiche();
-      mostraTerze();
-    }
-
-    function calcolaClassifiche() {
   classifiche = {};
   gironiData.forEach(p => {
     const risultato = p.RISULTATO.trim();
@@ -215,6 +191,40 @@
   mostraClassifiche();
   mostraTerze();
 }
+
+    function mostraClassifiche() {
+      const filtro = document.getElementById("gironeFilter").value;
+      const gironiOrdinati = Object.keys(classifiche).sort();
+      let html = "";
+      let miglioriTerze = [];
+      gironiOrdinati.forEach(g => {
+        let squadre = Object.entries(classifiche[g]).map(([nome, stats]) => {
+          const DR = stats.GF - stats.GS;
+          return { nome, girone: g, ...stats, DR };
+        });
+        squadre.sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
+        if (squadre.length >= 3) miglioriTerze.push(squadre[2]);
+      });
+      miglioriTerze.sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
+      const primeDueTerze = miglioriTerze.slice(0, 2).map(s => s.nome);
+      gironiOrdinati.forEach(g => {
+        if (filtro && filtro !== g) return;
+        let squadre = Object.entries(classifiche[g]).map(([nome, stats]) => {
+          const DR = stats.GF - stats.GS;
+          return { nome, girone: g, ...stats, DR };
+        });
+        squadre.sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
+        html += `<h3>Girone ${g}</h3><table><thead><tr><th>Pos</th><th>Squadra</th><th>Punti</th><th>PG</th><th>GF</th><th>GS</th><th>DR</th></tr></thead><tbody>`;
+        squadre.forEach((s, i) => {
+          let cls = "";
+          if (i < 2) cls = "highlight";
+          else if (i === 2 && primeDueTerze.includes(s.nome)) cls = "third-highlight";
+          html += `<tr class="${cls}"><td>${i + 1}</td><td>${s.nome}</td><td>${s.P}</td><td>${s.PG}</td><td>${s.GF}</td><td>${s.GS}</td><td>${s.DR}</td></tr>`;
+        });
+        html += `</tbody></table>`;
+      });
+      document.getElementById("classifiche").innerHTML = html;
+    }
 
     function mostraTerze() {
       let terze = [];

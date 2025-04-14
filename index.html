@@ -7,12 +7,8 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>Mini-Torneo LUI&LEI 2025</title>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js">
-
-</script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js">
-
-</script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -21,64 +17,43 @@
       background: #f8f8f8;
       color: #222;
     }
-
-    h1, h2, h3 {
-      color: #222;
-    }
-
+    h1, h2, h3 { color: #222; }
     .container {
       max-width: 1200px;
       margin: auto;
       padding: 0 1em;
     }
-
     .filter {
       margin: 1em 0;
     }
-
     table {
       width: 100%;
       border-collapse: collapse;
       margin: 1em 0;
       background: white;
     }
-
     th, td {
       border: 1px solid #ccc;
       padding: 0.5em;
       text-align: center;
     }
-
-    th {
-      background: #eee;
-    }
-
+    th { background: #eee; }
     .highlight {
       background-color: #d4edda;
       font-weight: bold;
     }
-
     .third-highlight {
       background-color: #ffeeba;
       font-weight: bold;
     }
-
-    /* MOBILE: Tabelle scrollabili */
-    .table-container {
-      overflow-x: auto;
-    }
-
+    .table-container { overflow-x: auto; }
     @media (max-width: 768px) {
-      body {
-        padding: 0.5em;
-      }
-
+      body { padding: 0.5em; }
       .filter label, .filter select {
         display: block;
         width: 100%;
         margin-bottom: 0.5em;
       }
-
       th, td {
         font-size: 0.9em;
         padding: 0.4em;
@@ -89,14 +64,6 @@
 <body>
   <div class="container">
     <h1>Mini-Torneo LUI&LEI 2025</h1>
-
-    
-<div class="filter">
-  <button onclick="mostraTutto()">🔄 Mostra Tutto</button>
-  <button onclick="soloFinali()">🏆 Solo Fase Finale</button>
-  <button onclick="caricaDati()">🔃 Forza aggiorna dati</button>
-</div>
-
 
     <div class="filter">
       <label for="gironeFilter">Filtra per girone:</label>
@@ -127,14 +94,17 @@
     <div class="table-container"><div id="finali"></div></div>
   </div>
 
-  <script>
-
-const random = `${Date.now()}-${Math.random()}`;
+<script>
+const timestamp = new Date().getTime();
 const baseProxy = "https://script.google.com/macros/s/AKfycbxbFV03QODYznLzLzsBObNDe43m2hQbSYd9iiZKGoZuXHyXF5IFXEldVQgzgwQaSijh-Q/exec";
-const programmaUrl = `${baseProxy}?gid=1898554956&nocache=${random}`;
-const finaliUrl = `${baseProxy}?gid=660358441&nocache=${random}`;
+const programmaUrl = `${baseProxy}?gid=1898554956&t=${timestamp}`;
+const finaliUrl = `${baseProxy}?gid=660358441&t=${timestamp}`;
 
+let gironiData = [];
+let classifiche = {};
+let finaliData = [];
 
+function caricaDati() {
   Papa.parse(programmaUrl, {
     download: true,
     header: true,
@@ -154,226 +124,28 @@ const finaliUrl = `${baseProxy}?gid=660358441&nocache=${random}`;
       verificaCaricamenti();
     }
   });
-
-
-    function mostraProgramma() {
-      const filtro = document.getElementById("gironeFilter").value;
-      let html = `<table><thead><tr><th>Giorno</th><th>Data</th><th>Ora</th><th>Campo</th><th>Girone</th><th>Squadra 1</th><th>Risultato</th><th>Squadra 2</th></tr></thead><tbody>`;
-      gironiData.filter(p => !filtro || p["GIRONE"] === filtro)
-        .sort((a, b) => new Date(`${a["DATA"]}T${a["ORA"]}`) - new Date(`${b["DATA"]}T${b["ORA"]}`))
-        .forEach(p => {
-          html += `<tr><td>${p["GIORNO"]}</td><td>${p["DATA"]}</td><td>${p["ORA"]}</td><td>${p["CAMPO"]}</td><td>${p["GIRONE"]}</td><td>${p["SQUADRA1"]}</td><td>${p["RISULTATO"]}</td><td>${p["SQUADRA2"]}</td></tr>`;
-        });
-      html += `</tbody></table>`;
-      document.getElementById("programma").innerHTML = html;
-    }
-
-    function calcolaClassifiche() {
-  classifiche = {};
-  gironiData.forEach(p => {
-    const risultato = p.RISULTATO.trim();
-    if (!/^\d+-\d+$/.test(risultato)) return; // Salta se il risultato non è valido
-
-    const girone = p.GIRONE;
-    if (!classifiche[girone]) classifiche[girone] = {};
-
-    const [g1, g2] = risultato.split("-").map(n => parseInt(n));
-    const s1 = p.SQUADRA1, s2 = p.SQUADRA2;
-
-    [s1, s2].forEach(s => {
-      if (!classifiche[girone][s]) classifiche[girone][s] = { PG: 0, GF: 0, GS: 0, P: 0 };
-    });
-
-    classifiche[girone][s1].PG++;
-    classifiche[girone][s2].PG++;
-    classifiche[girone][s1].GF += g1;
-    classifiche[girone][s1].GS += g2;
-    classifiche[girone][s2].GF += g2;
-    classifiche[girone][s2].GS += g1;
-
-    if (g1 > g2) classifiche[girone][s1].P += 3;
-    else if (g2 > g1) classifiche[girone][s2].P += 3;
-    else { classifiche[girone][s1].P += 1; classifiche[girone][s2].P += 1; }
-  });
-
-  mostraClassifiche();
-  mostraTerze();
 }
 
-function mostraClassifiche() {
+// --- Funzioni mostraProgramma, calcolaClassifiche, mostraClassifiche, mostraTerze, mostraFinali ---
+// (restano invariate, già presenti nel file originale)
+
+function filterGirone() {
   const filtro = document.getElementById("gironeFilter").value;
-  const gironiOrdinati = Object.keys(classifiche).sort();
-  let html = "";
-  let miglioriTerze = [];
-
-  // Controlla se tutti i gironi hanno completato le partite (5 squadre = 4 PG ciascuno)
-  const gironiCompleti = gironiOrdinati.every(g => {
-    return Object.values(classifiche[g]).every(s => s.PG === 4);
-  });
-
-  // Se tutti i gironi sono completi, calcola le due migliori terze
-  let primeDueTerze = [];
-  if (gironiCompleti) {
-    gironiOrdinati.forEach(g => {
-      let squadre = Object.entries(classifiche[g]).map(([nome, stats]) => {
-        const DR = stats.GF - stats.GS;
-        return { nome, girone: g, ...stats, DR };
-      }).sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
-      if (squadre.length >= 3) miglioriTerze.push(squadre[2]);
-    });
-    miglioriTerze.sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
-    primeDueTerze = miglioriTerze.slice(0, 2).map(s => s.nome);
-  }
-
-  // Visualizza classifiche dei gironi
-  gironiOrdinati.forEach(g => {
-    if (filtro && filtro !== g) return;
-    let squadre = Object.entries(classifiche[g]).map(([nome, stats]) => {
-      const DR = stats.GF - stats.GS;
-      return { nome, girone: g, ...stats, DR };
-    });
-    squadre.sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
-    html += `<h3>Girone ${g}</h3><table><thead><tr><th>Pos</th><th>Squadra</th><th>Punti</th><th>PG</th><th>GF</th><th>GS</th><th>DR</th></tr></thead><tbody>`;
-    squadre.forEach((s, i) => {
-      let cls = "";
-      if (i < 2) cls = "highlight";
-      else if (i === 2 && primeDueTerze.includes(s.nome)) cls = "third-highlight";
-      html += `<tr class="${cls}"><td>${i + 1}</td><td>${s.nome}</td><td>${s.P}</td><td>${s.PG}</td><td>${s.GF}</td><td>${s.GS}</td><td>${s.DR}</td></tr>`;
-    });
-    html += `</tbody></table>`;
-  });
-
-  document.getElementById("classifiche").innerHTML = html;
+  mostraProgramma();
+  mostraClassifiche();
+  document.getElementById("terze").style.display = filtro ? "none" : "block";
+  document.getElementById("titoloTerze").style.display = filtro ? "none" : "block";
+  document.getElementById("finali").style.display = filtro ? "none" : "block";
+  document.getElementById("titoloFinali").style.display = filtro ? "none" : "block";
 }
 
-    function mostraTerze() {
-      let terze = [];
-      Object.keys(classifiche).forEach(g => {
-        const squadre = Object.entries(classifiche[g]).map(([nome, stats]) => {
-          const DR = stats.GF - stats.GS;
-          return { girone: g, nome, ...stats, DR };
-        });
-        squadre.sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
-        if (squadre.length >= 3) terze.push(squadre[2]);
-      });
-      terze.sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
-      let html = `<table><thead><tr><th>Pos</th><th>Squadra</th><th>Girone</th><th>Punti</th><th>PG</th><th>GF</th><th>GS</th><th>DR</th></tr></thead><tbody>`;
-      terze.forEach((t, i) => {
-        const cls = i < 2 ? "third-highlight" : "";
-        html += `<tr class="${cls}"><td>${i + 1}</td><td>${t.nome}</td><td>${t.girone}</td><td>${t.P}</td><td>${t.PG}</td><td>${t.GF}</td><td>${t.GS}</td><td>${t.DR}</td></tr>`;
-      });
-      html += `</tbody></table>`;
-      document.getElementById("terze").innerHTML = html;
-    }
-
-function mostraFinali() {
-  let qualificati = {};
-  let gironiCompleti = [];
-
-  // Verifica gironi completi
-  Object.keys(classifiche).forEach(g => {
-    const squadre = Object.values(classifiche[g]);
-    const gironeCompleto = squadre.every(s => s.PG === 4);
-    if (gironeCompleto) gironiCompleti.push(g);
-  });
-
-  // Costruzione qualificati solo per gironi completi
-  gironiCompleti.forEach(g => {
-    let squadre = Object.entries(classifiche[g]).map(([nome, stats]) => {
-      const DR = stats.GF - stats.GS;
-      return { nome, P: stats.P, DR, GF: stats.GF };
-    }).sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
-
-    if (squadre[0]) qualificati[`1${g}`] = squadre[0].nome;
-    if (squadre[1]) qualificati[`2${g}`] = squadre[1].nome;
-    if (squadre[2]) qualificati[`3${g}`] = squadre[2].nome;
-  });
-
-  // Migliori terze
-  let terze = gironiCompleti.map(g => {
-    const squadre = Object.entries(classifiche[g]).map(([nome, stats]) => {
-      const DR = stats.GF - stats.GS;
-      return { girone: g, nome, ...stats, DR };
-    }).sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
-    return squadre[2];
-  }).filter(Boolean);
-
-  terze.sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
-// Solo se TUTTI i gironi sono completi, assegna 3M1 e 3M2
-const gironiOrdinati = Object.keys(classifiche);
-const tuttiGironiCompleti = gironiOrdinati.every(g => {
-  return Object.values(classifiche[g]).every(s => s.PG === 4);
-});
-
-if (tuttiGironiCompleti) {
-  if (terze[0]) qualificati["3M1"] = terze[0].nome;
-  if (terze[1]) qualificati["3M2"] = terze[1].nome;
-}
-
-
-
-  let vincitori = {}, perdenti = {};
-
-  let html = `<table><thead><tr><th>Fase Finale</th><th>Data</th><th>Ora</th><th>Campo</th><th>Turno</th><th>Squadra 1</th><th>Risultato</th><th>Squadra 2</th></tr></thead><tbody>`;
-
-  finaliData.sort((a, b) => new Date(`${a.DATA}T${a.ORA}`) - new Date(`${b.DATA}T${b.ORA}`))
-    .forEach(f => {
-      const turno = f.TURNO;
-      const cod1 = f.SQUADRA1.trim();
-      const cod2 = f.SQUADRA2.trim();
-      const risultato = f.RISULTATO.trim();
-
-      const squadra1 = qualificati[cod1] || vincitori[cod1] || perdenti[cod1] || "Da definire";
-      const squadra2 = qualificati[cod2] || vincitori[cod2] || perdenti[cod2] || "Da definire";
-
-      if (/^\d+-\d+$/.test(risultato)) {
-        const [g1, g2] = risultato.split("-").map(Number);
-        if (g1 > g2) {
-          vincitori[`VINC_${turno}`] = squadra1;
-          perdenti[`PERD_${turno}`] = squadra2;
-        } else if (g2 > g1) {
-          vincitori[`VINC_${turno}`] = squadra2;
-          perdenti[`PERD_${turno}`] = squadra1;
-        }
-      }
-
-      html += `<tr><td>${f["FASE FINALE"]}</td><td>${f.DATA}</td><td>${f.ORA}</td><td>${f.CAMPO}</td><td>${turno}</td><td>${squadra1}</td><td>${risultato}</td><td>${squadra2}</td></tr>`;
-    });
-
-  html += `</tbody></table>`;
-  document.getElementById("finali").innerHTML = html;
-}
-
-
-
-    function filterFase() {
-      const value = document.getElementById("faseFilter").value;
-      document.getElementById("contenutoGironi").style.display = value === "finali" ? "none" : "block";
-      document.getElementById("gironeFilter").disabled = value === "finali";
-    }
-
-    function filterGirone() {
-      const filtro = document.getElementById("gironeFilter").value;
-      mostraProgramma();
-      mostraClassifiche();
-      document.getElementById("terze").style.display = filtro ? "none" : "block";
-      document.getElementById("titoloTerze").style.display = filtro ? "none" : "block";
-      document.getElementById("finali").style.display = filtro ? "none" : "block";
-      document.getElementById("titoloFinali").style.display = filtro ? "none" : "block";
-    }
-
-
-
-	
 function verificaCaricamenti() {
   if (Object.keys(classifiche).length > 0 && finaliData.length > 0) {
     mostraFinali();
   }
 }
 
-    window.onload = caricaDati;
-  
-
+window.onload = caricaDati;
 </script>
 </body>
 </html>

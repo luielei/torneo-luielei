@@ -291,8 +291,17 @@ function mostraFinali() {
   }).filter(Boolean);
 
   terze.sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
+// Solo se TUTTI i gironi sono completi, assegna 3M1 e 3M2
+const gironiOrdinati = Object.keys(classifiche);
+const gironiCompleti = gironiOrdinati.every(g => {
+  return Object.values(classifiche[g]).every(s => s.PG === 4);
+});
+
+if (gironiCompleti) {
   if (terze[0]) qualificati["3M1"] = terze[0].nome;
   if (terze[1]) qualificati["3M2"] = terze[1].nome;
+}
+
 
   let vincitori = {}, perdenti = {};
 

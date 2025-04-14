@@ -250,20 +250,14 @@ function mostraFinali() {
   let qualificati = {};
   let gironiCompleti = [];
 
-  // Step 1: verifica che tutte le squadre di ogni girone abbiano giocato 4 partite
+  // Verifica gironi completi
   Object.keys(classifiche).forEach(g => {
     const squadre = Object.values(classifiche[g]);
     const gironeCompleto = squadre.every(s => s.PG === 4);
     if (gironeCompleto) gironiCompleti.push(g);
   });
 
-  // Step 2: se non ci sono almeno 7 gironi completi, non mostrare le finali
-  if (gironiCompleti.length < 7) {
-    document.getElementById("finali").innerHTML = `<p style="color: #c00; font-weight: bold;">Le finali saranno mostrate quando tutti i gironi avranno completato le partite.</p>`;
-    return;
-  }
-
-  // Step 3: seleziona solo i gironi completi
+  // Costruzione qualificati solo per gironi completi
   gironiCompleti.forEach(g => {
     let squadre = Object.entries(classifiche[g]).map(([nome, stats]) => {
       const DR = stats.GF - stats.GS;
@@ -275,7 +269,7 @@ function mostraFinali() {
     if (squadre[2]) qualificati[`3${g}`] = squadre[2].nome;
   });
 
-  // Step 4: migliori terze dai soli gironi completi
+  // Migliori terze
   let terze = gironiCompleti.map(g => {
     const squadre = Object.entries(classifiche[g]).map(([nome, stats]) => {
       const DR = stats.GF - stats.GS;
@@ -288,8 +282,8 @@ function mostraFinali() {
   if (terze[0]) qualificati["3M1"] = terze[0].nome;
   if (terze[1]) qualificati["3M2"] = terze[1].nome;
 
-  // Step 5: costruzione tabella finali
   let vincitori = {}, perdenti = {};
+
   let html = `<table><thead><tr><th>Fase Finale</th><th>Data</th><th>Ora</th><th>Campo</th><th>Turno</th><th>Squadra 1</th><th>Risultato</th><th>Squadra 2</th></tr></thead><tbody>`;
 
   finaliData.sort((a, b) => new Date(`${a.DATA}T${a.ORA}`) - new Date(`${b.DATA}T${b.ORA}`))
@@ -299,8 +293,8 @@ function mostraFinali() {
       const cod2 = f.SQUADRA2.trim();
       const risultato = f.RISULTATO.trim();
 
-      const squadra1 = qualificati[cod1] || vincitori[cod1] || perdenti[cod1] || cod1;
-      const squadra2 = qualificati[cod2] || vincitori[cod2] || perdenti[cod2] || cod2;
+      const squadra1 = qualificati[cod1] || vincitori[cod1] || perdenti[cod1] || "Da definire";
+      const squadra2 = qualificati[cod2] || vincitori[cod2] || perdenti[cod2] || "Da definire";
 
       if (/^\d+-\d+$/.test(risultato)) {
         const [g1, g2] = risultato.split("-").map(Number);

@@ -90,6 +90,7 @@
 <div class="filter">
   <button onclick="mostraTutto()">🔄 Mostra Tutto</button>
   <button onclick="soloFinali()">🏆 Solo Fase Finale</button>
+  <button onclick="caricaDati()">🔃 Forza aggiorna dati</button>
 </div>
 
 
@@ -123,20 +124,12 @@
   </div>
 
   <script>
-const timestamp = new Date().getTime();
-const baseProxy = "https://script.google.com/macros/s/AKfycbxbFV03QODYznLzLzsBObNDe43m2hQbSYd9iiZKGoZuXHyXF5IFXEldVQgzgwQaSijh-Q/exec"; // <-- sostituisci con il tuo URL
-const programmaUrl = `${baseProxy}?gid=1898554956&t=${timestamp}`;
-const finaliUrl = `${baseProxy}?gid=660358441&t=${timestamp}`;
 
-    let gironiData = [];
-    let classifiche = {};
-    let finaliData = [];
+const random = `${Date.now()}-${Math.random()}`;
+const baseProxy = "https://script.google.com/macros/s/AKfycbxbFV03QODYznLzLzsBObNDe43m2hQbSYd9iiZKGoZuXHyXF5IFXEldVQgzgwQaSijh-Q/exec";
+const programmaUrl = `${baseProxy}?gid=1898554956&nocache=${random}`;
+const finaliUrl = `${baseProxy}?gid=660358441&nocache=${random}`;
 
-  function caricaDati() {
-  const timestamp = new Date().getTime();
-  const baseProxy = "https://script.google.com/macros/s/AKfycbxbFV03QODYznLzLzsBObNDe43m2hQbSYd9iiZKGoZuXHyXF5IFXEldVQgzgwQaSijh-Q/exec";
-  const programmaUrl = `${baseProxy}?gid=1898554956&t=${timestamp}`;
-  const finaliUrl = `${baseProxy}?gid=660358441&t=${timestamp}`;
 
   Papa.parse(programmaUrl, {
     download: true,
@@ -375,7 +368,6 @@ function soloFinali() {
   document.getElementById("gironeFilter").disabled = true;
   document.getElementById("finali").style.display = "block";
   document.getElementById("titoloFinali").style.display = "block";
-
   caricaDati();
 }
 

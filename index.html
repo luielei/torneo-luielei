@@ -351,11 +351,16 @@ if (tuttiGironiCompleti) {
 
 
 
-    function filterFase() {
-      const value = document.getElementById("faseFilter").value;
-      document.getElementById("contenutoGironi").style.display = value === "finali" ? "none" : "block";
-      document.getElementById("gironeFilter").disabled = value === "finali";
-    }
+function filterFase() {
+  const value = document.getElementById("faseFilter").value;
+  document.getElementById("contenutoGironi").style.display = value === "finali" ? "none" : "block";
+  document.getElementById("gironeFilter").disabled = value === "finali";
+
+  if (value === "finali") {
+    caricaDati(); // <-- Ricarica dati ogni volta che si passa alla vista finali
+  }
+}
+
 
     function filterGirone() {
       const filtro = document.getElementById("gironeFilter").value;

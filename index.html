@@ -84,15 +84,14 @@
 </head>
 <body>
   <div class="container">
-    <h1>Mini-Torneo LUI&LEI 2025 test</h1>
+    <h1>Mini-Torneo LUI&LEI 2025</h1>
 
-    <div class="filter">
-      <label for="faseFilter">Visualizza:</label>
-      <select id="faseFilter" onchange="filterFase()">
-        <option value="tutto">Fase a Gironi + Finali</option>
-        <option value="finali">Solo Fase Finale</option>
-      </select>
-    </div>
+    
+<div class="filter">
+  <button onclick="mostraTutto()">🔄 Mostra Tutto</button>
+  <button onclick="soloFinali()">🏆 Solo Fase Finale</button>
+</div>
+
 
     <div class="filter">
       <label for="gironeFilter">Filtra per girone:</label>
@@ -150,22 +149,14 @@ const finaliUrl = `${baseProxy}?gid=660358441&t=${timestamp}`;
     }
   });
 
-Papa.parse(finaliUrl, {
-  download: true,
-  header: true,
-  complete: function(results) {
-    finaliData = results.data;
-
-    // Mostra sempre le finali se sono visibili
-    const value = document.getElementById("faseFilter").value;
-    if (value === "finali") {
-      mostraFinali();
-    } else {
+  Papa.parse(finaliUrl, {
+    download: true,
+    header: true,
+    complete: function(results) {
+      finaliData = results.data;
       verificaCaricamenti();
     }
-  }
-});
-
+  });
 }
 
 
@@ -359,22 +350,11 @@ if (tuttiGironiCompleti) {
 
 
 
-function filterFase() {
-  const value = document.getElementById("faseFilter").value;
-
-  const mostraFinale = value === "finali";
-
-  document.getElementById("contenutoGironi").style.display = mostraFinale ? "none" : "block";
-  document.getElementById("gironeFilter").disabled = mostraFinale;
-
-  document.getElementById("finali").style.display = mostraFinale ? "block" : "none";
-  document.getElementById("titoloFinali").style.display = mostraFinale ? "block" : "none";
-
-  // ricarica SEMPRE i dati per aggiornare la fase finale
-  if (mostraFinale) {
-    caricaDati();
-  }
-}
+    function filterFase() {
+      const value = document.getElementById("faseFilter").value;
+      document.getElementById("contenutoGironi").style.display = value === "finali" ? "none" : "block";
+      document.getElementById("gironeFilter").disabled = value === "finali";
+    }
 
     function filterGirone() {
       const filtro = document.getElementById("gironeFilter").value;
@@ -385,6 +365,20 @@ function filterFase() {
       document.getElementById("finali").style.display = filtro ? "none" : "block";
       document.getElementById("titoloFinali").style.display = filtro ? "none" : "block";
     }
+
+function mostraTutto() {
+  location.reload();
+}
+
+function soloFinali() {
+  document.getElementById("contenutoGironi").style.display = "none";
+  document.getElementById("gironeFilter").disabled = true;
+  document.getElementById("finali").style.display = "block";
+  document.getElementById("titoloFinali").style.display = "block";
+
+  caricaDati();
+}
+
 	
 function verificaCaricamenti() {
   if (Object.keys(classifiche).length > 0 && finaliData.length > 0) {

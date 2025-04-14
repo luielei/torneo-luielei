@@ -247,35 +247,49 @@
     }
 
 function mostraFinali() {
-  // Step 1: crea mappa squadre qualificate da gironi
   let qualificati = {};
+  let gironiCompleti = [];
+
+  // Step 1: verifica che tutte le squadre di ogni girone abbiano giocato 4 partite
   Object.keys(classifiche).forEach(g => {
+    const squadre = Object.values(classifiche[g]);
+    const gironeCompleto = squadre.every(s => s.PG === 4);
+    if (gironeCompleto) gironiCompleti.push(g);
+  });
+
+  // Step 2: se non ci sono almeno 7 gironi completi, non mostrare le finali
+  if (gironiCompleti.length < 7) {
+    document.getElementById("finali").innerHTML = `<p style="color: #c00; font-weight: bold;">Le finali saranno mostrate quando tutti i gironi avranno completato le partite.</p>`;
+    return;
+  }
+
+  // Step 3: seleziona solo i gironi completi
+  gironiCompleti.forEach(g => {
     let squadre = Object.entries(classifiche[g]).map(([nome, stats]) => {
       const DR = stats.GF - stats.GS;
       return { nome, P: stats.P, DR, GF: stats.GF };
     }).sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
+
     if (squadre[0]) qualificati[`1${g}`] = squadre[0].nome;
     if (squadre[1]) qualificati[`2${g}`] = squadre[1].nome;
     if (squadre[2]) qualificati[`3${g}`] = squadre[2].nome;
   });
 
-  // Step 2: aggiungi le 2 migliori terze
-  let terze = Object.keys(classifiche).map(g => {
+  // Step 4: migliori terze dai soli gironi completi
+  let terze = gironiCompleti.map(g => {
     const squadre = Object.entries(classifiche[g]).map(([nome, stats]) => {
       const DR = stats.GF - stats.GS;
       return { girone: g, nome, ...stats, DR };
     }).sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
     return squadre[2];
   }).filter(Boolean);
+
   terze.sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
   if (terze[0]) qualificati["3M1"] = terze[0].nome;
   if (terze[1]) qualificati["3M2"] = terze[1].nome;
 
-  // Step 3: mappa dei risultati e vincitori/ perdenti progressivi
-  let vincitori = {};
-  let perdenti = {};
-
-  // Step 4: costruzione tabella finali
+  // Step 5: costruzione tabella finali
+  let vincitori = {}, perdenti = {};
   let html = `<table><thead><tr><th>Fase Finale</th><th>Data</th><th>Ora</th><th>Campo</th><th>Turno</th><th>Squadra 1</th><th>Risultato</th><th>Squadra 2</th></tr></thead><tbody>`;
 
   finaliData.sort((a, b) => new Date(`${a.DATA}T${a.ORA}`) - new Date(`${b.DATA}T${b.ORA}`))
@@ -285,11 +299,9 @@ function mostraFinali() {
       const cod2 = f.SQUADRA2.trim();
       const risultato = f.RISULTATO.trim();
 
-      // Risolvi i nomi delle squadre
       const squadra1 = qualificati[cod1] || vincitori[cod1] || perdenti[cod1] || cod1;
       const squadra2 = qualificati[cod2] || vincitori[cod2] || perdenti[cod2] || cod2;
 
-      // Se risultato valido tipo "3-2", salva vincente e perdente
       if (/^\d+-\d+$/.test(risultato)) {
         const [g1, g2] = risultato.split("-").map(Number);
         if (g1 > g2) {

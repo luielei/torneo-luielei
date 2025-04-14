@@ -192,39 +192,51 @@
   mostraTerze();
 }
 
-    function mostraClassifiche() {
-      const filtro = document.getElementById("gironeFilter").value;
-      const gironiOrdinati = Object.keys(classifiche).sort();
-      let html = "";
-      let miglioriTerze = [];
-      gironiOrdinati.forEach(g => {
-        let squadre = Object.entries(classifiche[g]).map(([nome, stats]) => {
-          const DR = stats.GF - stats.GS;
-          return { nome, girone: g, ...stats, DR };
-        });
-        squadre.sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
-        if (squadre.length >= 3) miglioriTerze.push(squadre[2]);
-      });
-      miglioriTerze.sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
-      const primeDueTerze = miglioriTerze.slice(0, 2).map(s => s.nome);
-      gironiOrdinati.forEach(g => {
-        if (filtro && filtro !== g) return;
-        let squadre = Object.entries(classifiche[g]).map(([nome, stats]) => {
-          const DR = stats.GF - stats.GS;
-          return { nome, girone: g, ...stats, DR };
-        });
-        squadre.sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
-        html += `<h3>Girone ${g}</h3><table><thead><tr><th>Pos</th><th>Squadra</th><th>Punti</th><th>PG</th><th>GF</th><th>GS</th><th>DR</th></tr></thead><tbody>`;
-        squadre.forEach((s, i) => {
-          let cls = "";
-          if (i < 2) cls = "highlight";
-          else if (i === 2 && primeDueTerze.includes(s.nome)) cls = "third-highlight";
-          html += `<tr class="${cls}"><td>${i + 1}</td><td>${s.nome}</td><td>${s.P}</td><td>${s.PG}</td><td>${s.GF}</td><td>${s.GS}</td><td>${s.DR}</td></tr>`;
-        });
-        html += `</tbody></table>`;
-      });
-      document.getElementById("classifiche").innerHTML = html;
-    }
+function mostraClassifiche() {
+  const filtro = document.getElementById("gironeFilter").value;
+  const gironiOrdinati = Object.keys(classifiche).sort();
+  let html = "";
+  let miglioriTerze = [];
+
+  // Controlla se tutti i gironi hanno completato le partite (5 squadre = 4 PG ciascuno)
+  const gironiCompleti = gironiOrdinati.every(g => {
+    return Object.values(classifiche[g]).every(s => s.PG === 4);
+  });
+
+  // Se tutti i gironi sono completi, calcola le due migliori terze
+  let primeDueTerze = [];
+  if (gironiCompleti) {
+    gironiOrdinati.forEach(g => {
+      let squadre = Object.entries(classifiche[g]).map(([nome, stats]) => {
+        const DR = stats.GF - stats.GS;
+        return { nome, girone: g, ...stats, DR };
+      }).sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
+      if (squadre.length >= 3) miglioriTerze.push(squadre[2]);
+    });
+    miglioriTerze.sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
+    primeDueTerze = miglioriTerze.slice(0, 2).map(s => s.nome);
+  }
+
+  // Visualizza classifiche dei gironi
+  gironiOrdinati.forEach(g => {
+    if (filtro && filtro !== g) return;
+    let squadre = Object.entries(classifiche[g]).map(([nome, stats]) => {
+      const DR = stats.GF - stats.GS;
+      return { nome, girone: g, ...stats, DR };
+    });
+    squadre.sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
+    html += `<h3>Girone ${g}</h3><table><thead><tr><th>Pos</th><th>Squadra</th><th>Punti</th><th>PG</th><th>GF</th><th>GS</th><th>DR</th></tr></thead><tbody>`;
+    squadre.forEach((s, i) => {
+      let cls = "";
+      if (i < 2) cls = "highlight";
+      else if (i === 2 && primeDueTerze.includes(s.nome)) cls = "third-highlight";
+      html += `<tr class="${cls}"><td>${i + 1}</td><td>${s.nome}</td><td>${s.P}</td><td>${s.PG}</td><td>${s.GF}</td><td>${s.GS}</td><td>${s.DR}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+  });
+
+  document.getElementById("classifiche").innerHTML = html;
+}
 
     function mostraTerze() {
       let terze = [];

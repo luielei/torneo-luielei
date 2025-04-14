@@ -84,7 +84,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>Mini-Torneo LUI&LEI 2025 test3</h1>
+    <h1>Mini-Torneo LUI&LEI 2025</h1>
 
     <div class="filter">
       <label for="faseFilter">Visualizza:</label>
@@ -115,7 +115,7 @@
       <h2>Classifiche Gironi</h2>
       <div class="table-container"><div id="classifiche"></div></div>
 
-      <h2 id="titoloTerze">Classifica Terze Classificate</h2>
+      <h2 id="titoloTerze">Migliori Terze Classificate</h2>
       <div class="table-container"><div id="terze"></div></div>
     </div>
 
@@ -155,10 +155,16 @@ Papa.parse(finaliUrl, {
   header: true,
   complete: function(results) {
     finaliData = results.data;
-    mostraFinali(); // <-- mostralo sempre!
+
+    // Mostra sempre le finali se sono visibili
+    const value = document.getElementById("faseFilter").value;
+    if (value === "finali") {
+      mostraFinali();
+    } else {
+      verificaCaricamenti();
+    }
   }
 });
-
 
 }
 
@@ -355,17 +361,20 @@ if (tuttiGironiCompleti) {
 
 function filterFase() {
   const value = document.getElementById("faseFilter").value;
-  const finaleVisibile = value === "finali";
 
-  document.getElementById("contenutoGironi").style.display = finaleVisibile ? "none" : "block";
-  document.getElementById("gironeFilter").disabled = finaleVisibile;
-  document.getElementById("finali").style.display = "block";
-  document.getElementById("titoloFinali").style.display = "block";
+  const mostraFinale = value === "finali";
 
-  caricaDati(); // sempre ricarica dati al cambio filtro
+  document.getElementById("contenutoGironi").style.display = mostraFinale ? "none" : "block";
+  document.getElementById("gironeFilter").disabled = mostraFinale;
+
+  document.getElementById("finali").style.display = mostraFinale ? "block" : "none";
+  document.getElementById("titoloFinali").style.display = mostraFinale ? "block" : "none";
+
+  // ricarica SEMPRE i dati per aggiornare la fase finale
+  if (mostraFinale) {
+    caricaDati();
+  }
 }
-
-
 
     function filterGirone() {
       const filtro = document.getElementById("gironeFilter").value;

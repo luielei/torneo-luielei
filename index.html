@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>Mini-Torneo LUI&LEI 2025 test</title>
+  <title>Mini-Torneo LUI&LEI 2025</title>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -84,7 +84,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>Mini-Torneo LUI&LEI 2025</h1>
+    <h1>Mini-Torneo LUI&LEI 2025 test</h1>
 
     <div class="filter">
       <label for="faseFilter">Visualizza:</label>
@@ -133,24 +133,30 @@
     let finaliData = [];
 
     function caricaDati() {
-      Papa.parse(programmaUrl, {
-        download: true,
-        header: true,
-        complete: function(results) {
-          gironiData = results.data.filter(r => r["GIRONE"]);
-          mostraProgramma();
-          calcolaClassifiche();
-        }
-      });
-      Papa.parse(finaliUrl, {
-        download: true,
-        header: true,
-        complete: function(results) {
-          finaliData = results.data;
-          mostraFinali();
-        }
-      });
+    const timestamp = new Date().getTime();
+    const programmaUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=1898554956&single=true&output=csv&t=" + timestamp;
+    const finaliUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSk6sFq6_ScnG6L8i3PNCO6CMfvxPZYvawGrvWqKq3riFp-2qxuDFozQOH1aUjsbeRglRjyFMbKAeGp/pub?gid=660358441&single=true&output=csv&t=" + timestamp;
+
+    Papa.parse(programmaUrl, {
+      download: true,
+      header: true,
+      complete: function(results) {
+        gironiData = results.data.filter(r => r["GIRONE"]);
+        mostraProgramma();
+        calcolaClassifiche();
     }
+  });
+
+  Papa.parse(finaliUrl, {
+    download: true,
+    header: true,
+    complete: function(results) {
+      finaliData = results.data;
+      mostraFinali();
+    }
+  });
+}
+
 
     function mostraProgramma() {
       const filtro = document.getElementById("gironeFilter").value;

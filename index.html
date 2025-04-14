@@ -84,7 +84,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>Mini-Torneo LUI&LEI 2025</h1>
+    <h1>Mini-Torneo LUI&LEI 2025 test</h1>
 
     <div class="filter">
       <label for="faseFilter">Visualizza:</label>
@@ -115,7 +115,7 @@
       <h2>Classifiche Gironi</h2>
       <div class="table-container"><div id="classifiche"></div></div>
 
-      <h2 id="titoloTerze">Migliori Terze Classificate</h2>
+      <h2 id="titoloTerze">Classifica Terze Classificate</h2>
       <div class="table-container"><div id="terze"></div></div>
     </div>
 
@@ -155,9 +155,16 @@ Papa.parse(finaliUrl, {
   header: true,
   complete: function(results) {
     finaliData = results.data;
-    mostraFinali(); // <-- forza l'aggiornamento ogni volta che i dati finali sono riscaricati
+
+    const value = document.getElementById("faseFilter").value;
+    if (value === "finali") {
+      mostraFinali(); // mostra solo se l’utente ha selezionato la fase finale
+    } else {
+      verificaCaricamenti(); // flusso normale
+    }
   }
 });
+
 
 }
 
@@ -354,13 +361,16 @@ if (tuttiGironiCompleti) {
 
 function filterFase() {
   const value = document.getElementById("faseFilter").value;
-  document.getElementById("contenutoGironi").style.display = value === "finali" ? "none" : "block";
-  document.getElementById("gironeFilter").disabled = value === "finali";
+  const finaleVisibile = value === "finali";
 
-  if (value === "finali") {
-    caricaDati(); // <-- Ricarica dati ogni volta che si passa alla vista finali
-  }
+  document.getElementById("contenutoGironi").style.display = finaleVisibile ? "none" : "block";
+  document.getElementById("gironeFilter").disabled = finaleVisibile;
+  document.getElementById("finali").style.display = "block";
+  document.getElementById("titoloFinali").style.display = "block";
+
+  caricaDati(); // sempre ricarica dati al cambio filtro
 }
+
 
 
     function filterGirone() {

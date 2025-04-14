@@ -150,15 +150,15 @@ const finaliUrl = `${baseProxy}?gid=660358441&t=${timestamp}`;
     }
   });
 
-  Papa.parse(finaliUrl, {
-    download: true,
-    header: true,
-    complete: function(results) {
-      finaliData = results.data;
-      verificaCaricamenti();
-    }
-  });
-}
+Papa.parse(finaliUrl, {
+  download: true,
+  header: true,
+  complete: function(results) {
+    finaliData = results.data;
+    mostraFinali(); // <-- forza l'aggiornamento ogni volta che i dati finali sono riscaricati
+  }
+});
+
 
 
     function mostraProgramma() {

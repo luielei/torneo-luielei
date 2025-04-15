@@ -119,9 +119,10 @@
 
   <script>
 const timestamp = new Date().getTime();
-const baseProxy = "https://script.google.com/macros/s/AKfycbxbFV03QODYznLzLzsBObNDe43m2hQbSYd9iiZKGoZuXHyXF5IFXEldVQgzgwQaSijh-Q/exec"; // <-- sostituisci con il tuo URL
-const programmaUrl = `${baseProxy}?gid=1898554956&t=${timestamp}`;
-const finaliUrl = `${baseProxy}?gid=660358441&t=${timestamp}`;
+const baseProxy = "https://vercel-proxy-luielei.vercel.app";
+const programmaUrl = `${baseProxy}/?url=https://script.google.com/macros/s/AKfycbxbFV03QODYznLzLzsBObNDe43m2hQbSYd9iiZKGoZuXHyXF5IFXEldVQgzgwQaSijh-Q/exec?gid=1898554956&t=${timestamp}`;
+const finaliUrl = `${baseProxy}/?url=https://script.google.com/macros/s/AKfycbxbFV03QODYznLzLzsBObNDe43m2hQbSYd9iiZKGoZuXHyXF5IFXEldVQgzgwQaSijh-Q/exec?gid=660358441&t=${timestamp}`;
+
 
     let gironiData = [];
     let classifiche = {};

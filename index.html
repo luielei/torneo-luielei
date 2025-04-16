@@ -416,6 +416,7 @@ function mostraTerze() {
       });
       html += `</tbody></table>`;
       document.getElementById("finali").innerHTML = html;
+	  mostraTabellone(finaliData, qualificati, vincitori, perdenti);
     }
 	function mostraTabellone(finaliData, qualificati, vincitori, perdenti) {
   const fasi = {
@@ -441,7 +442,7 @@ function mostraTerze() {
   });
 
   document.getElementById("tabelloneFinale").innerHTML = html;
-  mostraTabellone(finaliData, qualificati, vincitori, perdenti);
+
 }
 
   </script>

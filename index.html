@@ -157,35 +157,55 @@
       document.getElementById("programma").innerHTML = html;
     }
 
-    function calcolaClassifiche() {
-      classifiche = {};
-      gironiData.forEach(p => {
-        const risultato = p.RISULTATO.trim();
-        if (!/^\d+-\d+$/.test(risultato)) return;
-        const girone = p.GIRONE;
-        if (!classifiche[girone]) classifiche[girone] = {};
-        const [g1, g2] = risultato.split("-").map(n => parseInt(n));
-        const s1 = p.SQUADRA1, s2 = p.SQUADRA2;
+ function calcolaClassifiche() {
+  classifiche = {};
 
-        [s1, s2].forEach(s => {
-          if (!classifiche[girone][s]) classifiche[girone][s] = { PG: 0, GF: 0, GS: 0, P: 0 };
-        });
+  // 1. Trova tutte le squadre per girone
+  const squadrePerGirone = {};
+  gironiData.forEach(p => {
+    const g = p.GIRONE;
+    if (!squadrePerGirone[g]) squadrePerGirone[g] = new Set();
+    squadrePerGirone[g].add(p.SQUADRA1);
+    squadrePerGirone[g].add(p.SQUADRA2);
+  });
 
-        classifiche[girone][s1].PG++;
-        classifiche[girone][s2].PG++;
-        classifiche[girone][s1].GF += g1;
-        classifiche[girone][s1].GS += g2;
-        classifiche[girone][s2].GF += g2;
-        classifiche[girone][s2].GS += g1;
+  // 2. Inizializza ogni squadra con valori a 0
+  Object.entries(squadrePerGirone).forEach(([g, set]) => {
+    classifiche[g] = {};
+    set.forEach(sq => {
+      classifiche[g][sq] = { PG: 0, GF: 0, GS: 0, P: 0 };
+    });
+  });
 
-        if (g1 > g2) classifiche[girone][s1].P += 3;
-        else if (g2 > g1) classifiche[girone][s2].P += 3;
-        else { classifiche[girone][s1].P += 1; classifiche[girone][s2].P += 1; }
-      });
+  // 3. Calcola i punteggi per le partite giocate
+  gironiData.forEach(p => {
+    const risultato = p.RISULTATO.trim();
+    if (!/^\d+-\d+$/.test(risultato)) return;
 
-      mostraClassifiche();
-      mostraTerze();
+    const [g1, g2] = risultato.split("-").map(Number);
+    const g = p.GIRONE;
+    const s1 = p.SQUADRA1;
+    const s2 = p.SQUADRA2;
+
+    classifiche[g][s1].PG++;
+    classifiche[g][s2].PG++;
+    classifiche[g][s1].GF += g1;
+    classifiche[g][s1].GS += g2;
+    classifiche[g][s2].GF += g2;
+    classifiche[g][s2].GS += g1;
+
+    if (g1 > g2) classifiche[g][s1].P += 3;
+    else if (g2 > g1) classifiche[g][s2].P += 3;
+    else {
+      classifiche[g][s1].P += 1;
+      classifiche[g][s2].P += 1;
     }
+  });
+
+  mostraClassifiche();
+  mostraTerze();
+}
+
 
 function mostraClassifiche() {
   const filtro = document.getElementById("gironeFilter").value;

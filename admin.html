@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Risultati LUI&LEI 2025</title>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 1em;
+      background: #f4f4f4;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 1em;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      margin-bottom: 2em;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 0.4em;
+      text-align: center;
+    }
+
+    th {
+      background: #eee;
+    }
+
+    input[type="text"] {
+      width: 60px;
+      text-align: center;
+    }
+
+    button {
+      padding: 0.3em 0.6em;
+      margin: 0.2em;
+      cursor: pointer;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .select-group {
+      margin-bottom: 1em;
+    }
+
+    .action-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 0.5em;
+    }
+  </style>
+
+  <script>
+    // Login semplice via prompt
+    const adminPassword = "luielei2025";
+    const inserita = sessionStorage.getItem("autenticato");
+
+    if (!inserita) {
+      const pw = prompt("Inserisci la password per accedere:");
+      if (pw !== adminPassword) {
+        alert("Accesso negato");
+        window.location.href = "https://www.google.com";
+      } else {
+        sessionStorage.setItem("autenticato", "true");
+      }
+    }
+  </script>
+</head>
+<body>
+  <div class="container">
+    <h1>Admin Risultati – LUI&LEI 2025</h1>
+
+    <div class="select-group">
+      <label for="sezione">Seleziona sezione:</label>
+      <select id="sezione" onchange="caricaPartite()">
+        <option value="programma">Fase a Gironi</option>
+        <option value="finali">Fase Finale</option>
+      </select>
+    </div>
+
+    <div class="select-group">
+      <label for="filtroTesto">Filtra partite (squadra, girone, data...):</label>
+      <input type="text" id="filtroTesto" oninput="caricaPartite()" placeholder="Es. BIRRA, G, 20.04.2025" />
+    </div>
+
+    <div id="tabellaPartite"></div>
+  </div>
+  
+  <div class="select-group">
+  <button onclick="resetRisultati()">Reset Tutti i Risultati</button>
+</div>
+
+  <script>
+    // CONFIGURAZIONE FIREBASE
+    const firebaseConfig = {
+      apiKey: "AIzaSyBCGZTsWoErR5lWQIFZxcuEtYi1d8Jb5mY",
+      authDomain: "luielei-2025.firebaseapp.com",
+      databaseURL: "https://luielei-2025-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "luielei-2025",
+      storageBucket: "luielei-2025.firebasestorage.app",
+      messagingSenderId: "362554157461",
+      appId: "1:362554157461:web:266893104571d9182dae9c"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+function resetRisultati() {
+  const sezione = document.getElementById("sezione").value;
+
+  if (!confirm(`Sicuro di voler svuotare tutti i risultati della sezione "${sezione}"?`)) return;
+
+  db.ref(sezione).once("value", snapshot => {
+    const partite = snapshot.val();
+    const updates = {};
+
+    for (const id in partite) {
+      updates[`${id}/RISULTATO`] = ""; // <-- CORRETTO: campo esiste ma vuoto
+    }
+
+    db.ref(sezione).update(updates)
+      .then(() => {
+        alert("Tutti i risultati sono stati svuotati.");
+        caricaPartite(); // aggiorna subito la tabella
+      })
+      .catch(err => alert("Errore: " + err));
+  });
+}
+
+
+    function caricaPartite() {
+      const sezione = document.getElementById("sezione").value;
+      db.ref(sezione).once("value", snapshot => {
+        const partite = snapshot.val();
+        mostraTabella(partite, sezione);
+      });
+    }
+
+ function salvaRisultato(sezione, id) {
+  const risultato = document.getElementById(`risultato-${sezione}-${id}`).value.trim();
+  if (!/^\d+-\d+$/.test(risultato) && risultato !== "") {
+    alert("Inserisci un risultato valido nel formato 'X-Y'");
+    return;
+  }
+
+  db.ref(`${sezione}/${id}/RISULTATO`).set(risultato)
+    .then(() => {
+      alert("Risultato aggiornato!");
+      caricaPartite(); // <-- AGGIUNTA
+    })
+    .catch(err => alert("Errore: " + err));
+}
+    window.salvaRisultato = salvaRisultato;
+
+ function svuotaRisultato(sezione, id) {
+  if (confirm("Vuoi davvero cancellare il risultato?")) {
+    db.ref(`${sezione}/${id}/RISULTATO`).set("")
+      .then(() => {
+        alert("Risultato svuotato.");
+        caricaPartite(); // <-- AGGIUNTA
+      })
+      .catch(err => alert("Errore: " + err));
+  }
+}
+    window.svuotaRisultato = svuotaRisultato;
+
+    function mostraTabella(partite, sezione) {
+      const filtro = document.getElementById("filtroTesto").value.toLowerCase();
+
+      const partiteArray = Object.entries(partite)
+        .filter(([, p]) => {
+          const testo = `${p.DATA} ${p.ORA} ${p.CAMPO} ${p.GIRONE || ""} ${p.SQUADRA1} ${p.SQUADRA2}`.toLowerCase();
+          return testo.includes(filtro);
+        })
+        .sort(([, a], [, b]) => {
+  const dtA = new Date(`${a.DATA}T${a.ORA}`);
+  const dtB = new Date(`${b.DATA}T${b.ORA}`);
+  if (dtA.getTime() !== dtB.getTime()) return dtA - dtB;
+  return (a.CAMPO || "").localeCompare(b.CAMPO || "");
+});
+
+      let html = `<table><thead><tr>`;
+      if (sezione === "programma") {
+        html += `<th>Data</th><th>Ora</th><th>Campo</th><th>Girone</th><th>Squadra 1</th><th>Risultato</th><th>Squadra 2</th><th>Azioni</th>`;
+      } else {
+        html += `<th>Fase</th><th>Data</th><th>Ora</th><th>Campo</th><th>Turno</th><th>Squadra 1</th><th>Risultato</th><th>Squadra 2</th><th>Azioni</th>`;
+      }
+      html += `</tr></thead><tbody>`;
+
+      for (const [id, p] of partiteArray) {
+        html += `<tr>`;
+        if (sezione === "programma") {
+          html += `<td>${p.DATA}</td><td>${p.ORA}</td><td>${p.CAMPO}</td><td>${p.GIRONE}</td><td>${p.SQUADRA1}</td>`;
+        } else {
+          html += `<td>${p["FASE FINALE"]}</td><td>${p.DATA}</td><td>${p.ORA}</td><td>${p.CAMPO}</td><td>${p.TURNO}</td><td>${p.SQUADRA1}</td>`;
+        }
+
+        html += `<td><input type="text" id="risultato-${sezione}-${id}" value="${p.RISULTATO || ""}" /></td>`;
+        html += `<td>${p.SQUADRA2}</td>`;
+        html += `<td class="action-buttons">
+                  <button onclick="salvaRisultato('${sezione}', '${id}')">Salva</button>
+                  <button onclick="svuotaRisultato('${sezione}', '${id}')">Svuota</button>
+                 </td>`;
+        html += `</tr>`;
+      }
+
+      html += `</tbody></table>`;
+      document.getElementById("tabellaPartite").innerHTML = html;
+    }
+
+    // Carica di default la fase a gironi
+    window.onload = caricaPartite;
+  </script>
+</body>
+</html>

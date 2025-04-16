@@ -349,8 +349,12 @@ function mostraTerze() {
       }
 
       let html = `<table><thead><tr><th>Fase Finale</th><th>Data</th><th>Ora</th><th>Campo</th><th>Turno</th><th>Squadra 1</th><th>Risultato</th><th>Squadra 2</th></tr></thead><tbody>`;
-      finaliData.sort((a, b) => new Date(`${a.DATA}T${a.ORA}`) - new Date(`${b.DATA}T${b.ORA}`)).forEach(f => {
-        const turno = f.TURNO;
+      finaliData.sort((a, b) => {
+  const dtA = new Date(`${a.DATA}T${a.ORA}`);
+  const dtB = new Date(`${b.DATA}T${b.ORA}`);
+  if (dtA.getTime() !== dtB.getTime()) return dtA - dtB;
+  return a.CAMPO.localeCompare(b.CAMPO); // Campo A prima di B
+}).forEach(f => {        const turno = f.TURNO;
         const cod1 = f.SQUADRA1.trim();
         const cod2 = f.SQUADRA2.trim();
         const risultato = f.RISULTATO.trim();

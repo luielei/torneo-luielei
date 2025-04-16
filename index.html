@@ -354,8 +354,9 @@ function mostraTerze() {
         const cod1 = f.SQUADRA1.trim();
         const cod2 = f.SQUADRA2.trim();
         const risultato = f.RISULTATO.trim();
-        const squadra1 = qualificati[cod1] || vincitori[cod1] || perdenti[cod1] || "Da definire";
-        const squadra2 = qualificati[cod2] || vincitori[cod2] || perdenti[cod2] || "Da definire";
+        const squadra1 = qualificati[cod1] || vincitori[cod1] || perdenti[cod1] || cod1;
+        const squadra2 = qualificati[cod2] || vincitori[cod2] || perdenti[cod2] || cod2;
+
 
         if (/^\d+-\d+$/.test(risultato)) {
           const [g1, g2] = risultato.split("-").map(Number);

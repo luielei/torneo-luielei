@@ -67,7 +67,32 @@
         margin-bottom: 0.5em;
       }
     }
-
+#tabelloneFinale {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  margin-top: 2em;
+}
+.fase {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 140px;
+}
+.fase h3 {
+  margin-bottom: 0.5em;
+}
+.match {
+  border: 1px solid #ccc;
+  background: white;
+  padding: 0.5em;
+  margin: 0.5em 0;
+  text-align: center;
+  font-size: 0.9em;
+}
   </style>
 </head>
 <body>
@@ -115,6 +140,10 @@
 
   <h2 id="titoloFinali">Fase Finale</h2>
   <div class="table-container"><div id="finali"></div></div>
+
+<h2 id="titoloFinali">Fase Finale</h2>
+<div class="table-container"><div id="finali"></div></div>
+<div id="tabelloneFinale"></div>
 
   <script>
     const firebaseConfig = {
@@ -388,6 +417,32 @@ function mostraTerze() {
       html += `</tbody></table>`;
       document.getElementById("finali").innerHTML = html;
     }
+	function mostraTabellone(finaliData, qualificati, vincitori, perdenti) {
+  const fasi = {
+    "Ottavi": [],
+    "Quarti": [],
+    "Semifinali": [],
+    "Finale per il terzo posto": [],
+    "Finalissima": []
+  };
+
+  finaliData.forEach(f => {
+    if (fasi[f["FASE FINALE"]]) {
+      const squadra1 = qualificati[f.SQUADRA1] || vincitori[f.SQUADRA1] || perdenti[f.SQUADRA1] || f.SQUADRA1;
+      const squadra2 = qualificati[f.SQUADRA2] || vincitori[f.SQUADRA2] || perdenti[f.SQUADRA2] || f.SQUADRA2;
+      const risultato = f.RISULTATO || "-";
+      fasi[f["FASE FINALE"]].push(`<div class='match'><strong>${squadra1}</strong><br>${risultato}<br><strong>${squadra2}</strong></div>`);
+    }
+  });
+
+  let html = "";
+  Object.entries(fasi).forEach(([titolo, partite]) => {
+    html += `<div class='fase'><h3>${titolo}</h3>${partite.join("")}</div>`;
+  });
+
+  document.getElementById("tabelloneFinale").innerHTML = html;
+}
+mostraTabellone(finaliData, qualificati, vincitori, perdenti);
   </script>
 </body>
 </html>

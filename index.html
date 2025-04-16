@@ -325,71 +325,38 @@ function mostraTerze() {
       }
     }
 
-function mostraFinali() {
-  let qualificati = {};
-  let vincitori = {}, perdenti = {};
-  let gironiCompleti = Object.keys(classifiche).filter(g =>
-    Object.values(classifiche[g]).every(s => s.PG === 4)
-  );
+    function mostraFinali() {
+      let qualificati = {};
+      let vincitori = {}, perdenti = {};
+      let gironiCompleti = Object.keys(classifiche).filter(g =>
+        Object.values(classifiche[g]).every(s => s.PG === 4)
+      );
 
-  gironiCompleti.forEach(g => {
-    let squadre = Object.entries(classifiche[g]).map(([nome, stats]) => {
-      const DR = stats.GF - stats.GS;
-      return { nome, P: stats.P, DR, GF: stats.GF };
-    }).sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
+      gironiCompleti.forEach(g => {
+        let squadre = Object.entries(classifiche[g]).map(([nome, stats]) => {
+          const DR = stats.GF - stats.GS;
+          return { nome, P: stats.P, DR, GF: stats.GF };
+        }).sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
 
-    if (squadre[0]) qualificati[`1${g}`] = squadre[0].nome;
-    if (squadre[1]) qualificati[`2${g}`] = squadre[1].nome;
-    if (squadre[2]) qualificati[`3${g}`] = squadre[2].nome;
-  });
+        if (squadre[0]) qualificati[`1${g}`] = squadre[0].nome;
+        if (squadre[1]) qualificati[`2${g}`] = squadre[1].nome;
+        if (squadre[2]) qualificati[`3${g}`] = squadre[2].nome;
+      });
 
-  let terze = gironiCompleti.map(g => {
-    const squadre = Object.entries(classifiche[g]).map(([nome, stats]) => {
-      const DR = stats.GF - stats.GS;
-      return { girone: g, nome, ...stats, DR };
-    }).sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
-    return squadre[2];
-  }).filter(Boolean);
+      let terze = gironiCompleti.map(g => {
+        const squadre = Object.entries(classifiche[g]).map(([nome, stats]) => {
+          const DR = stats.GF - stats.GS;
+          return { girone: g, nome, ...stats, DR };
+        }).sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
+        return squadre[2];
+      }).filter(Boolean);
 
-  terze.sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
+      terze.sort((a, b) => b.P - a.P || b.DR - a.DR || b.GF - a.GF);
 
-  if (gironiCompleti.length === 7) {
-    if (terze[0]) qualificati["3M1"] = terze[0].nome;
-    if (terze[1]) qualificati["3M2"] = terze[1].nome;
-  }
-
-  let html = `<table><thead><tr><th>Fase Finale</th><th>Data</th><th>Ora</th><th>Campo</th><th>Turno</th><th>Squadra 1</th><th>Risultato</th><th>Squadra 2</th></tr></thead><tbody>`;
-  finaliData.sort((a, b) => {
-    const dtA = new Date(`${a.DATA}T${a.ORA}`);
-    const dtB = new Date(`${b.DATA}T${b.ORA}`);
-    if (dtA.getTime() !== dtB.getTime()) return dtA - dtB;
-    return a.CAMPO.localeCompare(b.CAMPO);
-  }).forEach(f => {
-    const turno = f.TURNO;
-    const cod1 = f.SQUADRA1.trim();
-    const cod2 = f.SQUADRA2.trim();
-    const risultato = f.RISULTATO.trim();
-    const squadra1 = qualificati[cod1] || vincitori[cod1] || perdenti[cod1] || cod1;
-    const squadra2 = qualificati[cod2] || vincitori[cod2] || perdenti[cod2] || cod2;
-
-    if (/^\d+-\d+$/.test(risultato)) {
-      const [g1, g2] = risultato.split("-").map(Number);
-      if (g1 > g2) {
-        vincitori[`VINC_${turno}`] = squadra1;
-        perdenti[`PERD_${turno}`] = squadra2;
-      } else if (g2 > g1) {
-        vincitori[`VINC_${turno}`] = squadra2;
-        perdenti[`PERD_${turno}`] = squadra1;
+      if (gironiCompleti.length === 7) {
+        if (terze[0]) qualificati["3M1"] = terze[0].nome;
+        if (terze[1]) qualificati["3M2"] = terze[1].nome;
       }
-    }
-
-    html += `<tr><td>${f["FASE FINALE"]}</td><td>${f.DATA}</td><td>${f.ORA}</td><td>${f.CAMPO}</td><td>${turno}</td><td>${squadra1}</td><td>${risultato}</td><td>${squadra2}</td></tr>`;
-  });
-  html += `</tbody></table>`;
-  document.getElementById("finali").innerHTML = html;
-
-  mostraTabellone(finaliData, qualificati, vincitori, perdenti);
-}
 
       let html = `<table><thead><tr><th>Fase Finale</th><th>Data</th><th>Ora</th><th>Campo</th><th>Turno</th><th>Squadra 1</th><th>Risultato</th><th>Squadra 2</th></tr></thead><tbody>`;
       finaliData.sort((a, b) => {

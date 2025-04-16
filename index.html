@@ -47,6 +47,14 @@
       background-color: #ffeeba;
       font-weight: bold;
     }
+	/* 🎨 Colori gironi */
+.girone-A { background-color: #e8f5e9; }
+.girone-B { background-color: #fff3e0; }
+.girone-C { background-color: #e3f2fd; }
+.girone-D { background-color: #fce4ec; }
+.girone-E { background-color: #ede7f6; }
+.girone-F { background-color: #f3e5f5; }
+.girone-G { background-color: #e0f7fa; }
 
     .table-container {
       overflow-x: auto;
@@ -59,6 +67,7 @@
         margin-bottom: 0.5em;
       }
     }
+
   </style>
 </head>
 <body>
@@ -152,22 +161,23 @@
       document.getElementById("titoloFinali").style.display = filtro ? "none" : "block";
     }
 
-    function mostraProgramma() {
-      const filtro = document.getElementById("gironeFilter").value;
-      let html = `<table><thead><tr><th>Giorno</th><th>Data</th><th>Ora</th><th>Campo</th><th>Girone</th><th>Squadra 1</th><th>Risultato</th><th>Squadra 2</th></tr></thead><tbody>`;
-      gironiData.filter(p => !filtro || p["GIRONE"] === filtro)
-        .sort((a, b) => {
-  const dtA = new Date(`${a.DATA}T${a.ORA}`);
-  const dtB = new Date(`${b.DATA}T${b.ORA}`);
-  if (dtA.getTime() !== dtB.getTime()) return dtA - dtB;
-  return a.CAMPO.localeCompare(b.CAMPO); // Campo A prima di B
-})
-        .forEach(p => {
-          html += `<tr><td>${p["GIORNO"]}</td><td>${p["DATA"]}</td><td>${p["ORA"]}</td><td>${p["CAMPO"]}</td><td>${p["GIRONE"]}</td><td>${p["SQUADRA1"]}</td><td>${p["RISULTATO"]}</td><td>${p["SQUADRA2"]}</td></tr>`;
-        });
-      html += `</tbody></table>`;
-      document.getElementById("programma").innerHTML = html;
-    }
+  function mostraProgramma() {
+    const filtro = document.getElementById("gironeFilter").value;
+    let html = `<table><thead><tr><th>Giorno</th><th>Data</th><th>Ora</th><th>Campo</th><th>Girone</th><th>Squadra 1</th><th>Risultato</th><th>Squadra 2</th></tr></thead><tbody>`;
+    gironiData.filter(p => !filtro || p["GIRONE"] === filtro)
+      .sort((a, b) => {
+        const dtA = new Date(`${a.DATA}T${a.ORA}`);
+        const dtB = new Date(`${b.DATA}T${b.ORA}`);
+        if (dtA.getTime() !== dtB.getTime()) return dtA - dtB;
+        return a.CAMPO.localeCompare(b.CAMPO);
+      })
+      .forEach(p => {
+        const cls = `girone-${p["GIRONE"]}`;
+        html += `<tr class="${cls}"><td>${p["GIORNO"]}</td><td>${p["DATA"]}</td><td>${p["ORA"]}</td><td>${p["CAMPO"]}</td><td>${p["GIRONE"]}</td><td>${p["SQUADRA1"]}</td><td>${p["RISULTATO"]}</td><td>${p["SQUADRA2"]}</td></tr>`;
+      });
+    html += `</tbody></table>`;
+    document.getElementById("programma").innerHTML = html;
+  }
 
  function calcolaClassifiche() {
   classifiche = {};

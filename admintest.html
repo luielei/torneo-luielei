@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Risultati LUI&LEI 2025</title>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 1em; }
+    .container { max-width: 1200px; margin: auto; }
+    h1 { text-align: center; margin-bottom: 1em; }
+    .select-group { margin-bottom: 1em; }
+    table { width: 100%; border-collapse: collapse; background: #fff; margin-bottom: 2em; }
+    th, td { border: 1px solid #ccc; padding: 0.4em; text-align: center; }
+    th { background: #eee; }
+    input[type="text"] { width: 60px; text-align: center; }
+    button { padding: 0.3em 0.6em; margin: 0.2em; cursor: pointer; }
+    .action-buttons { display: flex; justify-content: center; gap: 0.5em; }
+    #loginForm, #adminContent { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Admin Risultati – LUI&LEI 2025</h1>
+
+    <!-- Login -->
+    <div id="loginForm">
+      <p><strong>Accesso riservato</strong></p>
+      <input type="email" id="email" placeholder="Email admin" /><br /><br />
+      <input type="password" id="password" placeholder="Password" /><br /><br />
+      <button onclick="login()">Login</button>
+      <p id="loginError" style="color:red;"></p>
+    </div>
+
+    <!-- Contenuto visibile dopo login -->
+    <div id="adminContent">
+      <button onclick="logout()">Logout</button>
+
+      <div class="select-group">
+        <label for="sezione">Seleziona sezione:</label>
+        <select id="sezione" onchange="caricaPartite()">
+          <option value="programma">Fase a Gironi</option>
+          <option value="finali">Fase Finale</option>
+        </select>
+      </div>
+
+      <div class="select-group">
+        <label for="filtroTesto">Filtra partite (squadra, girone, data...):</label>
+        <input type="text" id="filtroTesto" oninput="caricaPartite()" placeholder="Es. BIRRA, G, 20.04.2025" />
+      </div>
+
+      <div id="tabellaPartite"></div>
+
+      <div class="select-group">
+        <button onclick="resetRisultati()">Reset Tutti i Risultati</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBCGZTsWoErR5lWQIFZxcuEtYi1d8Jb5mY",
+      authDomain: "luielei-2025.firebaseapp.com",
+      databaseURL: "https://luielei-2025-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "luielei-2025",
+      storageBucket: "luielei-2025.appspot.com",
+      messagingSenderId: "362554157461",
+      appId: "1:362554157461:web:266893104571d9182dae9c"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const auth = firebase.auth();
+
+    // LOGIN
+    function login() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      auth.signInWithEmailAndPassword(email, password)
+        .then(() => {
+          document.getElementById("loginForm").style.display = "none";
+          document.getElementById("adminContent").style.display = "block";
+          caricaPartite();
+        })
+        .catch(error => {
+          document.getElementById("loginError").innerText = "Credenziali non valide.";
+        });
+    }
+
+    function logout() {
+      auth.signOut().then(() => location.reload());
+    }
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        document.getElementById("loginForm").style.display = "none";
+        document.getElementById("adminContent").style.display = "block";
+        caricaPartite();
+      } else {
+        document.getElementById("loginForm").style.display = "block";
+        document.getElementById("adminContent").style.display = "none";
+      }
+    });
+
+    function resetRisultati() {
+      const sezione = document.getElementById("sezione").value;
+      if (!confirm(`Sicuro di voler svuotare tutti i risultati della sezione "${sezione}"?`)) return;
+
+      db.ref(sezione).once("value", snapshot => {
+        const updates = {};
+        Object.keys(snapshot.val()).forEach(id => {
+          updates[`${id}/RISULTATO`] = "";
+        });
+        db.ref(sezione).update(updates)
+          .then(() => { alert("Tutti i risultati svuotati."); caricaPartite(); });
+      });
+    }
+
+    function salvaRisultato(sezione, id) {
+      const risultato = document.getElementById(`risultato-${sezione}-${id}`).value.trim();
+      if (!/^\d+-\d+$/.test(risultato) && risultato !== "") {
+        alert("Inserisci un risultato valido nel formato 'X-Y'");
+        return;
+      }
+      db.ref(`${sezione}/${id}/RISULTATO`).set(risultato).then(caricaPartite);
+    }
+    window.salvaRisultato = salvaRisultato;
+
+    function svuotaRisultato(sezione, id) {
+      if (confirm("Vuoi davvero cancellare il risultato?")) {
+        db.ref(`${sezione}/${id}/RISULTATO`).set("").then(caricaPartite);
+      }
+    }
+    window.svuotaRisultato = svuotaRisultato;
+
+    function caricaPartite() {
+      const sezione = document.getElementById("sezione").value;
+      db.ref(sezione).once("value", snapshot => {
+        mostraTabella(snapshot.val(), sezione);
+      });
+    }
+
+    function mostraTabella(partite, sezione) {
+      const filtro = document.getElementById("filtroTesto").value.toLowerCase();
+      const entries = Object.entries(partite).filter(([, p]) => {
+        const testo = `${p.DATA} ${p.ORA} ${p.CAMPO} ${p.GIRONE || ""} ${p.SQUADRA1} ${p.SQUADRA2}`.toLowerCase();
+        return testo.includes(filtro);
+      }).sort(([, a], [, b]) => {
+        const dtA = new Date(`${a.DATA}T${a.ORA}`);
+        const dtB = new Date(`${b.DATA}T${b.ORA}`);
+        return dtA - dtB || a.CAMPO.localeCompare(b.CAMPO);
+      });
+
+      let html = `<table><thead><tr>`;
+      html += sezione === "programma"
+        ? `<th>Data</th><th>Ora</th><th>Campo</th><th>Girone</th><th>Squadra 1</th><th>Risultato</th><th>Squadra 2</th><th>Azioni</th>`
+        : `<th>Fase</th><th>Data</th><th>Ora</th><th>Campo</th><th>Turno</th><th>Squadra 1</th><th>Risultato</th><th>Squadra 2</th><th>Azioni</th>`;
+      html += `</tr></thead><tbody>`;
+
+      for (const [id, p] of entries) {
+        html += `<tr>`;
+        if (sezione === "programma") {
+          html += `<td>${p.DATA}</td><td>${p.ORA}</td><td>${p.CAMPO}</td><td>${p.GIRONE}</td><td>${p.SQUADRA1}</td>`;
+        } else {
+          html += `<td>${p["FASE FINALE"]}</td><td>${p.DATA}</td><td>${p.ORA}</td><td>${p.CAMPO}</td><td>${p.TURNO}</td><td>${p.SQUADRA1}</td>`;
+        }
+        html += `<td><input type="text" id="risultato-${sezione}-${id}" value="${p.RISULTATO || ""}" /></td>`;
+        html += `<td>${p.SQUADRA2}</td>`;
+        html += `<td class="action-buttons">
+                  <button onclick="salvaRisultato('${sezione}', '${id}')">Salva</button>
+                  <button onclick="svuotaRisultato('${sezione}', '${id}')">Svuota</button>
+                 </td>`;
+        html += `</tr>`;
+      }
+
+      html += `</tbody></table>`;
+      document.getElementById("tabellaPartite").innerHTML = html;
+    }
+  </script>
+</body>
+</html>

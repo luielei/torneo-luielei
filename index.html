@@ -113,20 +113,20 @@
     padding: 0;
   }
 
-  .filter,
-  #faseFilter,
+  .filter, 
+  #faseFilter, 
   #gironeFilter {
     display: none !important;
   }
 
-  h1, h2, h3 {
-    page-break-after: avoid;
-    page-break-before: avoid;
+  .sezione {
+    page-break-before: always !important;
+    break-before: page !important;
   }
 
-  /* 🆕 Forza nuova pagina prima di ogni sezione (ma non per il primo titolo h2!) */
-  h2:not(:first-of-type) {
-    page-break-before: always;
+  .sezione:first-of-type {
+    page-break-before: auto !important;
+    break-before: auto !important;
   }
 
   table {
@@ -140,14 +140,6 @@
     break-inside: avoid !important;
   }
 
-  #classifiche > div,
-  #terze,
-  #programma {
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-  }
-
-  /* 🏆 Tabellone finale */
   #tabelloneFinale {
     display: block !important;
     width: 100%;
@@ -171,6 +163,7 @@
     margin: 1.5cm;
   }
 }
+
 
 
   </style>
@@ -207,23 +200,38 @@
     </select>
   </div>
 
-  <div id="contenutoGironi">
-    <h2>Programma Fase a Gironi</h2>
-    <div class="table-container"><div id="programma"></div></div>
-
-    <h2>Classifiche Gironi</h2>
-    <div class="table-container"><div id="classifiche"></div></div>
-
-    <h2 id="titoloTerze">Migliori Terze Classificate</h2>
-    <div class="table-container"><div id="terze"></div></div>
+<div class="sezione">
+  <h2>Programma Fase a Gironi</h2>
+  <div class="table-container">
+    <div id="programma"></div>
   </div>
+</div>
 
-  <h2 id="titoloFinali">Fase Finale</h2>
-  <div class="table-container"><div id="finali"></div></div>
+<div class="sezione">
+  <h2>Classifiche Gironi</h2>
+  <div class="table-container">
+    <div id="classifiche"></div>
+  </div>
+</div>
 
-<h2 id="titoloFinali">Fase Finale</h2>
-<div class="table-container"><div id="finali"></div></div>
-<div id="tabelloneFinale"></div>
+<div class="sezione">
+  <h2 id="titoloTerze">Migliori Terze Classificate</h2>
+  <div class="table-container">
+    <div id="terze"></div>
+  </div>
+</div>
+
+<div class="sezione">
+  <h2 id="titoloFinali">Fase Finale (Tabella)</h2>
+  <div class="table-container">
+    <div id="finali"></div>
+  </div>
+</div>
+
+<div class="sezione">
+  <h2 id="titoloTabellone">Fase Finale (Tabellone)</h2>
+  <div id="tabelloneFinale"></div>
+</div>
 
   <script>
     const firebaseConfig = {

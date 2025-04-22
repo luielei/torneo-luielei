@@ -108,20 +108,20 @@
   body {
     background: white;
     color: black;
-    font-size: 12pt;
+    font-size: 11pt;
     margin: 0;
     padding: 0;
   }
 
-  .filter, 
-  #faseFilter, 
+  .filter,
+  #faseFilter,
   #gironeFilter {
-    display: none !important; /* Nasconde i filtri */
+    display: none !important;
   }
 
   h1, h2, h3 {
-    page-break-after: avoid;
     page-break-before: avoid;
+    page-break-after: avoid;
   }
 
   table {
@@ -135,35 +135,43 @@
     break-inside: avoid !important;
   }
 
-  /* Tabellone delle finali */
-  #tabelloneFinale {
-    display: flex !important;
-    flex-direction: row;
-    justify-content: center;
-    flex-wrap: wrap;
+  /* 👇️ Impedisce la rottura delle classifiche */
+  #classifiche > div,
+  #terze,
+  #programma {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+  }
+
+  /* 🏆 Tabellone finale: cambiamo da flex a block e usiamo float */
+  #tabelloneFinale {
+    display: block !important;
     width: 100%;
   }
 
   .fase {
+    float: left;
+    width: 220px;
+    margin: 0.5em;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
-    margin: 0.5em;
-    min-width: 200px;
-    max-width: 220px;
+    page-break-before: avoid !important;
+    page-break-after: avoid !important;
   }
 
   .match {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+    margin-bottom: 0.3em;
   }
 
+  /* 📄 Landscape e margini */
   @page {
     size: A4 landscape;
     margin: 1.5cm;
   }
 }
+
 
   </style>
 </head>

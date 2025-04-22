@@ -104,7 +104,62 @@
   border-radius: 6px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
+@media print {
+  body {
+    background: white;
+    color: black;
+    font-size: 12pt;
+    margin: 0;
+    padding: 0;
+  }
 
+  .filter, 
+  #faseFilter, 
+  #gironeFilter, 
+  #titoloFinali + .table-container + #tabelloneFinale {
+    display: none !important; /* Nasconde filtri e doppio titolo finali */
+  }
+
+  h1, h2, h3 {
+    page-break-after: avoid;
+    page-break-before: avoid;
+  }
+
+  table {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  tr, td, th {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  #tabelloneFinale {
+    display: flex !important;
+    flex-direction: row;
+    justify-content: center;
+    flex-wrap: wrap; /* Permette al tabellone di andare a capo senza spezzarsi male */
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .fase {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    margin: 0.5em;
+  }
+
+  .match {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 1cm;
+  }
+}
   </style>
 </head>
 <body>

@@ -120,8 +120,13 @@
   }
 
   h1, h2, h3 {
-    page-break-before: avoid;
     page-break-after: avoid;
+    page-break-before: avoid;
+  }
+
+  /* 🆕 Forza nuova pagina prima di ogni sezione (ma non per il primo titolo h2!) */
+  h2:not(:first-of-type) {
+    page-break-before: always;
   }
 
   table {
@@ -135,7 +140,6 @@
     break-inside: avoid !important;
   }
 
-  /* 👇️ Impedisce la rottura delle classifiche */
   #classifiche > div,
   #terze,
   #programma {
@@ -143,7 +147,7 @@
     break-inside: avoid !important;
   }
 
-  /* 🏆 Tabellone finale: cambiamo da flex a block e usiamo float */
+  /* 🏆 Tabellone finale */
   #tabelloneFinale {
     display: block !important;
     width: 100%;
@@ -155,17 +159,13 @@
     margin: 0.5em;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
-    page-break-before: avoid !important;
-    page-break-after: avoid !important;
   }
 
   .match {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
-    margin-bottom: 0.3em;
   }
 
-  /* 📄 Landscape e margini */
   @page {
     size: A4 landscape;
     margin: 1.5cm;

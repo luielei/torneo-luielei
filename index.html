@@ -115,9 +115,8 @@
 
   .filter, 
   #faseFilter, 
-  #gironeFilter, 
-  #titoloFinali + .table-container + #tabelloneFinale {
-    display: none !important; /* Nasconde filtri e doppio titolo finali */
+  #gironeFilter {
+    display: none !important; /* Nasconde i filtri */
   }
 
   h1, h2, h3 {
@@ -126,40 +125,46 @@
   }
 
   table {
-    page-break-inside: avoid;
-    break-inside: avoid;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    width: 100%;
   }
 
   tr, td, th {
-    page-break-inside: avoid;
-    break-inside: avoid;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
+  /* Tabellone delle finali */
   #tabelloneFinale {
     display: flex !important;
     flex-direction: row;
     justify-content: center;
-    flex-wrap: wrap; /* Permette al tabellone di andare a capo senza spezzarsi male */
-    page-break-inside: avoid;
-    break-inside: avoid;
+    flex-wrap: wrap;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    width: 100%;
   }
 
   .fase {
-    page-break-inside: avoid;
-    break-inside: avoid;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
     margin: 0.5em;
+    min-width: 200px;
+    max-width: 220px;
   }
 
   .match {
-    page-break-inside: avoid;
-    break-inside: avoid;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   @page {
-    size: A4 portrait;
-    margin: 1cm;
+    size: A4 landscape;
+    margin: 1.5cm;
   }
 }
+
   </style>
 </head>
 <body>
